@@ -51,10 +51,14 @@
   const NTFY_TOPIC = "oadict-admin-c02f2a0c657a";
 
   function notifyAdmin(name, mean, username) {
+    // הערה חשובה: כותרות HTTP (headers) חייבות תווים לטיניים בלבד - אי אפשר
+    // לשים בהן טקסט בעברית ישירות (הדפדפן זורק שגיאה). לכן הכותרת (Title)
+    // נשארת באנגלית, וכל הטקסט בעברית עובר בתוך גוף ההודעה (body) שכן תומך
+    // ב-UTF-8 ללא הגבלה.
     fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
       method: "POST",
       headers: {
-        Title: "מילה חדשה ממתינה לאישור - OADictionary",
+        Title: "New word pending approval - OADictionary",
         Tags: "memo",
         Click: "https://yakmos.github.io/oadictionary/admin.html",
       },
