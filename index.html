@@ -47,12 +47,16 @@
 
   async function loadStats() {
     try {
-      // ספירה מדויקת (Firestore count()) - זול וחוסך הורדת כל המסמכים
-      const snap = await db.collection("words").count().get();
-      document.getElementById("statCount").textContent = snap.data().count.toLocaleString("he-IL");
+      // ה-SDK הקומפקטי בגרסה הזו לא תומך ב-count()/select(), אז סופרים
+      // ישירות מכל המסמכים (3,650 מילים - עומס קל וזמין תמיד).
+      const snap = await db.collection("words").get();
+      document.getElementById("statCount").textContent = snap.size.toLocaleString("he-IL");
 
-      const usersSnap = await db.collection("words").select("username").limit(1000).get();
-      const names = new Set(usersSnap.docs.map((d) => d.data().username).filter(Boolean));
+      const names = new Set();
+      snap.forEach((doc) => {
+        const u = doc.data().username;
+        if (u) names.add(u);
+      });
       document.getElementById("statContributors").textContent = names.size.toLocaleString("he-IL") + "+";
     } catch (e) {
       console.error(e);
