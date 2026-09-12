@@ -65,6 +65,22 @@ gh repo create oadictionary --public --source=. --push
   (לפי אימייל, ראו `isAdmin()` ב-`firestore.rules`) יכול לאשר/למחוק.
 - ההתחברות נוצרה כבר עבורכם ב-Firebase console -> Authentication -> Users.
 
+## התראות על מילים חדשות
+
+כשמישהו שולח מילה חדשה דרך `add.html`, האתר שולח מיד התראת push דרך
+[ntfy.sh](https://ntfy.sh) - שירות חינמי בלי הרשמה ובלי שרת (ה-topic מוגדר
+כקבוע `NTFY_TOPIC` בתוך `add.html`).
+
+**כדי לקבל את ההתראות (חד פעמי):**
+
+- **בנייד**: התקינו את האפליקציה החינמית **ntfy** ([אנדרואיד](https://play.google.com/store/apps/details?id=io.heckel.ntfy) / [אייפון](https://apps.apple.com/us/app/ntfy/id1625396347)), פתחו אותה, +Subscribe to topic, והכניסו את השם:
+  `oadict-admin-c02f2a0c657a`
+- **במחשב**: פשוט פתחו את `https://ntfy.sh/oadict-admin-c02f2a0c657a` בדפדפן ואשרו הרשאת התראות (עובד כל עוד הטאב פתוח ברקע).
+
+מכיוון שה-topic הוא שם אקראי וסודי, אין צורך בסיסמה - רק מי שיודע את השם יכול
+להירשם אליו. אם תרצו, אפשר להחליף אותו בעתיד לשם חדש (גם ב-`add.html` וגם
+בהרשמה שלכם).
+
 ## מה אפשר להוסיף בהמשך
 
 - מסך "הכי פופולריות" ממוין לפי `rating`/`likes`.

@@ -46,6 +46,22 @@
   const form = document.getElementById("addForm");
   const msg = document.getElementById("formMsg");
 
+  // התראה בזמן אמת למנהל דרך ntfy.sh (שירות push חינמי, בלי הרשמה/שרת).
+  // ראו README - "התראות על מילים חדשות" - איך להירשם לקבל אותן.
+  const NTFY_TOPIC = "oadict-admin-c02f2a0c657a";
+
+  function notifyAdmin(name, mean, username) {
+    fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
+      method: "POST",
+      headers: {
+        Title: "מילה חדשה ממתינה לאישור - OADictionary",
+        Tags: "memo",
+        Click: "https://yakmos.github.io/oadictionary/admin.html",
+      },
+      body: `${name} - ${mean} (נשלח ע"י: ${username || "אנונימי"})`,
+    }).catch((err) => console.warn("notify failed (לא קריטי):", err));
+  }
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = document.getElementById("fName").value.trim();
@@ -59,8 +75,9 @@
     submitBtn.disabled = true;
 
     try {
+      const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
       await db.collection("words").add({
-        name: name.charAt(0).toUpperCase() + name.slice(1),
+        name: capitalized,
         mean,
         asco,
         username,
@@ -71,6 +88,7 @@
         rand: Math.random(),
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
+      notifyAdmin(capitalized, mean, username);
       msg.textContent = "תודה! המילה נשלחה ותופיע לאחר אישור.";
       msg.className = "msg show ok";
       form.reset();
