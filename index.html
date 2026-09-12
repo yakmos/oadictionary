@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OADictionary - למידת אנגלית באמצעות אסוציאציות</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<main>
+  <section class="hero">
+    <h1>לומדים אנגלית עם אסוציאציות</h1>
+    <p>
+      אלפי מילים באנגלית עם תרגום, הסבר ואסוציאציה שעוזרת לזכור אותן לנצח -
+      נבנה ע"י הקהילה, בהשראת האתר המקורי OADICTIONARY.com.
+    </p>
+    <div class="cta-row">
+      <a href="practice.html" class="btn btn-primary">בואו נתרגל &larr;</a>
+      <a href="browse.html" class="btn btn-secondary">עיון במילון</a>
+      <a href="add.html" class="btn btn-outline">הוסיפו מילה</a>
+    </div>
+  </section>
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat"><div class="num" id="statCount">-</div><div class="label">מילים במאגר</div></div>
+    <div class="stat"><div class="num" id="statContributors">-</div><div class="label">תורמים</div></div>
+  </div>
+
+  <section class="card">
+    <h2 style="margin-top:0">איך זה עובד?</h2>
+    <p style="color:var(--text-dim);line-height:1.7">
+      לכל מילה באנגלית יש תרגום קצר לעברית, ובנוסף <strong>אסוציאציה</strong> -
+      דרך יצירתית לקשר את המילה למשהו שכבר מוכר לכם, כדי שתזכרו אותה בקלות
+      במבחן. אפשר לתרגל באופן אקראי, לדפדף בכל המילון, ואפילו להוסיף אסוציאציות
+      משלכם ולעזור לאחרים.
+    </p>
+  </section>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/app.js"></script>
+<script>
+  renderChrome("home");
+
+  async function loadStats() {
+    try {
+      // ספירה מדויקת (Firestore count()) - זול וחוסך הורדת כל המסמכים
+      const snap = await db.collection("words").count().get();
+      document.getElementById("statCount").textContent = snap.data().count.toLocaleString("he-IL");
+
+      const usersSnap = await db.collection("words").select("username").limit(1000).get();
+      const names = new Set(usersSnap.docs.map((d) => d.data().username).filter(Boolean));
+      document.getElementById("statContributors").textContent = names.size.toLocaleString("he-IL") + "+";
+    } catch (e) {
+      console.error(e);
+      document.getElementById("statsRow").innerHTML =
+        '<div class="stat"><div class="label">חבר/י את Firebase כדי לראות נתונים (ראו README)</div></div>';
+    }
+  }
+  loadStats();
+</script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>תרגול אסוציאציות - OADictionary</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<main>
+  <div class="card practice-card">
+    <div class="practice-hint">מהי המשמעות של המילה?</div>
+    <div class="practice-word eng" id="wordEl">...</div>
+    <div id="scoreLine" style="color:var(--text-dim);margin-top:6px;"></div>
+
+    <div class="cta-row" style="margin-top:20px;">
+      <button class="btn btn-primary" id="revealBtn">גלה תשובה</button>
+      <button class="btn btn-secondary" id="nextBtn">מילה הבאה &larr;</button>
+    </div>
+
+    <div class="reveal-box" id="revealBox">
+      <div class="mean" id="meanEl"></div>
+      <div class="asco" id="ascoEl"></div>
+      <div class="by-line" id="byEl"></div>
+
+      <div class="stars" id="stars">
+        <span class="star" data-v="1">&#9733;</span>
+        <span class="star" data-v="2">&#9733;</span>
+        <span class="star" data-v="3">&#9733;</span>
+        <span class="star" data-v="4">&#9733;</span>
+        <span class="star" data-v="5">&#9733;</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/app.js"></script>
+<script>
+  renderChrome("practice");
+
+  let currentDoc = null;
+  let seenCount = 0;
+  let ratedThisRound = false;
+
+  const wordEl = document.getElementById("wordEl");
+  const meanEl = document.getElementById("meanEl");
+  const ascoEl = document.getElementById("ascoEl");
+  const byEl = document.getElementById("byEl");
+  const revealBox = document.getElementById("revealBox");
+  const revealBtn = document.getElementById("revealBtn");
+  const scoreLine = document.getElementById("scoreLine");
+
+  // Firestore לא תומך ב"תעד אקראי" ישירות, אז בזמן הייבוא הוספנו לכל
+  // מסמך שדה rand (מספר אקראי בין 0 ל-1). כדי להביא מילה אקראית: מגרילים
+  // ערך, ומביאים את המסמך הראשון שה-rand שלו גדול/שווה לו (ואם אין - עוטפים לתחילת הטווח).
+  async function fetchRandomWord() {
+    const r = Math.random();
+    let snap = await db.collection("words")
+      .where("confirm", "==", 1)
+      .where("rand", ">=", r)
+      .orderBy("rand")
+      .limit(1)
+      .get();
+    if (snap.empty) {
+      snap = await db.collection("words")
+        .where("confirm", "==", 1)
+        .orderBy("rand")
+        .limit(1)
+        .get();
+    }
+    if (snap.empty) return null;
+    return snap.docs[0];
+  }
+
+  async function loadNext() {
+    revealBox.classList.remove("show");
+    ratedThisRound = false;
+    document.querySelectorAll("#stars .star").forEach((s) => s.classList.remove("filled"));
+    wordEl.textContent = "טוען...";
+    try {
+      const doc = await fetchRandomWord();
+      if (!doc) { wordEl.textContent = "אין עדיין מילים במאגר"; return; }
+      currentDoc = doc;
+      const d = doc.data();
+      wordEl.textContent = d.name;
+      meanEl.textContent = d.mean;
+      ascoEl.textContent = d.asco;
+      byEl.textContent = d.username ? `אסוציאציה מאת: ${d.username}` : "";
+      seenCount++;
+      scoreLine.textContent = `מילה מספר ${seenCount} בסבב הזה`;
+    } catch (e) {
+      console.error(e);
+      wordEl.textContent = "שגיאה בטעינה - ודאו שהגדרתם את Firebase (README)";
+    }
+  }
+
+  revealBtn.addEventListener("click", () => revealBox.classList.add("show"));
+  document.getElementById("nextBtn").addEventListener("click", loadNext);
+
+  document.getElementById("stars").addEventListener("click", async (e) => {
+    const star = e.target.closest(".star");
+    if (!star || !currentDoc || ratedThisRound) return;
+    const val = Number(star.dataset.v);
+    document.querySelectorAll("#stars .star").forEach((s) => {
+      s.classList.toggle("filled", Number(s.dataset.v) <= val);
+    });
+    ratedThisRound = true;
+    try {
+      await db.runTransaction(async (tx) => {
+        const ref = db.collection("words").doc(currentDoc.id);
+        const fresh = await tx.get(ref);
+        const data = fresh.data();
+        const newLikes = (data.likes || 0) + 1;
+        const newTotal = (data.total_rate || 0) + val;
+        tx.update(ref, { likes: newLikes, total_rate: newTotal, rating: newTotal / newLikes });
+      });
+    } catch (err) {
+      console.error("rating failed", err);
+    }
+  });
+
+  loadNext();
+</script>
+</body>
+</html>

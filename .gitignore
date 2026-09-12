@@ -1,0 +1,5 @@
+node_modules/
+scripts/import-config.js
+.firebase/
+.DS_Store
+Thumbs.db

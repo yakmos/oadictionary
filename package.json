@@ -1,0 +1,13 @@
+{
+  "name": "oadictionary",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OADictionary - אתר ללימוד אנגלית באמצעות אסוציאציות, מגובה Firebase",
+  "scripts": {
+    "import": "node scripts/import-words.js"
+  },
+  "dependencies": {
+    "firebase": "^10.12.2",
+    "csv-parse": "^5.5.6"
+  }
+}

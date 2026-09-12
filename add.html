@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>הוספת מילה - OADictionary</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<main>
+  <h1 style="margin-top:0">הוספת מילה ואסוציאציה חדשה</h1>
+  <p style="color:var(--text-dim)">
+    יש לכם דרך מגניבה לזכור מילה באנגלית? שתפו אותה עם כולם!
+  </p>
+
+  <form class="add-form card" id="addForm">
+    <div>
+      <label for="fName">המילה באנגלית</label>
+      <input id="fName" class="eng" type="text" required placeholder="Astonishment" />
+    </div>
+    <div>
+      <label for="fMean">התרגום לעברית</label>
+      <input id="fMean" type="text" required placeholder="תדהמה" />
+    </div>
+    <div>
+      <label for="fAsco">האסוציאציה / ההסבר שלכם</label>
+      <textarea id="fAsco" required placeholder="כתבו כאן איך אתם זוכרים את המילה..."></textarea>
+    </div>
+    <div>
+      <label for="fUser">השם שלכם (יוצג לצד האסוציאציה)</label>
+      <input id="fUser" type="text" required placeholder="לדוגמה: יקיר" />
+    </div>
+    <button type="submit" class="btn btn-primary">שליחה למאגר</button>
+    <div class="msg" id="formMsg"></div>
+  </form>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/app.js"></script>
+<script>
+  renderChrome("add");
+
+  const form = document.getElementById("addForm");
+  const msg = document.getElementById("formMsg");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("fName").value.trim();
+    const mean = document.getElementById("fMean").value.trim();
+    const asco = document.getElementById("fAsco").value.trim();
+    const username = document.getElementById("fUser").value.trim();
+
+    if (!name || !mean || !asco || !username) return;
+
+    const submitBtn = form.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+
+    try {
+      await db.collection("words").add({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        mean,
+        asco,
+        username,
+        confirm: 0,      // ממתין לאישור מנהל, בדיוק כמו באתר המקורי
+        likes: 0,
+        rating: 0,
+        total_rate: 0,
+        rand: Math.random(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      msg.textContent = "תודה! המילה נשלחה ותופיע לאחר אישור.";
+      msg.className = "msg show ok";
+      form.reset();
+    } catch (err) {
+      console.error(err);
+      msg.textContent = "משהו השתבש - נסו שוב, או ודאו שהגדרתם את Firebase (README).";
+      msg.className = "msg show err";
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

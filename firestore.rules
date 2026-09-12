@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// כללי אבטחה ל-Firestore.
+// - קריאה: פתוחה לכולם (זה מילון ציבורי).
+// - יצירה: פתוחה לכולם, אבל רק עם השדות הנכונים ובברירת מחדל confirm=0
+//   (ממתין לאישור ידני שלכם ב-Firestore console לפני שהוא יופיע באתר).
+// - עדכון: מותר רק לשדות של דירוג (likes/rating/total_rate), כדי שאף אחד
+//   לא יוכל לשנות מילה/תרגום של מישהו אחר או "לאשר" את עצמו.
+// - מחיקה: אסורה מהאתר (תמחקו ידנית ב-console אם צריך).
+//
+// לפני production אמיתי כדאי לשקול הגבלת קצב (App Check / Cloud Functions),
+// אבל לפרויקט אישי כזה הכללים האלה סבירים כברירת מחדל.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /words/{wordId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasAll(
+                        ['name','mean','asco','username','confirm','likes','rating','total_rate','rand']
+                      )
+                    && request.resource.data.confirm == 0
+                    && request.resource.data.likes == 0
+                    && request.resource.data.total_rate == 0
+                    && request.resource.data.name is string  && request.resource.data.name.size() < 255
+                    && request.resource.data.mean is string  && request.resource.data.mean.size() < 255
+                    && request.resource.data.asco is string  && request.resource.data.asco.size() < 2000
+                    && request.resource.data.username is string && request.resource.data.username.size() < 255;
+
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['likes','rating','total_rate']);
+
+      allow delete: if false;
+    }
+  }
+}
