@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
 <title>ניהול - OADictionary</title>
+<link rel="icon" href="img/favicon.ico" />
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -13,9 +14,9 @@
   <h1 style="margin-top:0">פאנל ניהול</h1>
 
   <div id="loginBox" class="card admin-login">
-    <label for="loginEmail" style="color:var(--text-dim);font-size:.9rem">אימייל</label>
+    <label for="loginEmail" style="color:var(--navy-soft);font-size:.9rem">אימייל</label>
     <input id="loginEmail" type="email" autocomplete="username" placeholder="you@example.com" />
-    <label for="loginPass" style="color:var(--text-dim);font-size:.9rem">סיסמה</label>
+    <label for="loginPass" style="color:var(--navy-soft);font-size:.9rem">סיסמה</label>
     <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" />
     <button class="btn btn-primary" id="loginBtn">התחברות</button>
     <div class="msg" id="loginMsg"></div>
@@ -23,11 +24,11 @@
 
   <div id="panel" style="display:none">
     <div class="admin-bar">
-      <div id="pendingCount" style="color:var(--text-dim)"></div>
+      <div id="pendingCount" style="color:var(--navy-soft)"></div>
       <button class="btn btn-outline btn-sm" id="logoutBtn">התנתקות</button>
     </div>
     <div id="pendingList"></div>
-    <div id="emptyMsg" style="display:none;color:var(--text-dim);text-align:center;padding:30px">
+    <div id="emptyMsg" style="display:none;color:var(--navy-soft);text-align:center;padding:30px">
       אין מילים ממתינות לאישור כרגע 🎉
     </div>
   </div>

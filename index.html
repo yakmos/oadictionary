@@ -4,21 +4,49 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>OADictionary - למידת אנגלית באמצעות אסוציאציות</title>
+<link rel="icon" href="img/favicon.ico" />
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
 <main>
-  <section class="hero">
-    <h1>לומדים אנגלית עם אסוציאציות</h1>
-    <p>
-      אלפי מילים באנגלית עם תרגום, הסבר ואסוציאציה שעוזרת לזכור אותן לנצח -
-      נבנה ע"י הקהילה, בהשראת האתר המקורי OADICTIONARY.com.
-    </p>
-    <div class="cta-row">
-      <a href="practice.html" class="btn btn-primary">בואו נתרגל &larr;</a>
-      <a href="browse.html" class="btn btn-secondary">עיון במילון</a>
-      <a href="add.html" class="btn btn-outline">הוסיפו מילה</a>
+  <section class="hero-wrap">
+    <img src="img/hero-woman.jpg" alt="" class="hero-illustration" />
+    <div class="hero-inner">
+      <h1>מחפשים אסוציאציה למילה?</h1>
+      <p class="hero-sub">
+        הקלידו מילה באנגלית ומצאו תרגום, הסבר ואסוציאציה שעוזרת לזכור אותה
+        לנצח - נבנה ע"י הקהילה, בהשראת האתר המקורי OADICTIONARY.com.
+      </p>
+
+      <div class="search-shell">
+        <form class="search-pill" id="searchForm" autocomplete="off">
+          <input
+            id="searchInput"
+            class="eng"
+            type="text"
+            placeholder="לדוגמה: Astonishment"
+            aria-label="חיפוש מילה באנגלית"
+          />
+          <button type="submit">חיפוש</button>
+        </form>
+        <div class="search-suggestions" id="suggestions"></div>
+      </div>
+
+      <div class="result-card" id="resultCard">
+        <div class="r-top">
+          <span class="r-name eng" id="rName"></span>
+          <span class="r-mean" id="rMean"></span>
+        </div>
+        <div class="r-asco" id="rAsco"></div>
+        <div class="r-by" id="rBy"></div>
+      </div>
+
+      <div class="cta-row">
+        <a href="practice.html" class="btn btn-primary">בואו נתרגל &larr;</a>
+        <a href="browse.html" class="btn btn-secondary">עיון בכל המילון</a>
+        <a href="add.html" class="btn btn-outline">הוסיפו מילה</a>
+      </div>
     </div>
   </section>
 
@@ -26,16 +54,6 @@
     <div class="stat"><div class="num" id="statCount">-</div><div class="label">מילים במאגר</div></div>
     <div class="stat"><div class="num" id="statContributors">-</div><div class="label">תורמים</div></div>
   </div>
-
-  <section class="card">
-    <h2 style="margin-top:0">איך זה עובד?</h2>
-    <p style="color:var(--text-dim);line-height:1.7">
-      לכל מילה באנגלית יש תרגום קצר לעברית, ובנוסף <strong>אסוציאציה</strong> -
-      דרך יצירתית לקשר את המילה למשהו שכבר מוכר לכם, כדי שתזכרו אותה בקלות
-      במבחן. אפשר לתרגל באופן אקראי, לדפדף בכל המילון, ואפילו להוסיף אסוציאציות
-      משלכם ולעזור לאחרים.
-    </p>
-  </section>
 </main>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -44,6 +62,108 @@
 <script src="js/app.js"></script>
 <script>
   renderChrome("home");
+
+  const searchForm = document.getElementById("searchForm");
+  const searchInput = document.getElementById("searchInput");
+  const suggestionsEl = document.getElementById("suggestions");
+  const resultCard = document.getElementById("resultCard");
+
+  let allWords = [];
+  let wordsLoaded = false;
+
+  async function loadWords() {
+    // המאגר קטן יחסית (כמה אלפי מילים) - נוח וזול יותר להביא הכל בשאילתה אחת
+    // ולסנן/לחפש בצד הלקוח. מציגים רק מילים מאושרות (confirm==1).
+    const snap = await db.collection("words").where("confirm", "==", 1).get();
+    allWords = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    wordsLoaded = true;
+  }
+
+  function showSuggestions(list) {
+    if (!list.length) {
+      suggestionsEl.innerHTML = '<div class="suggestion-empty">לא נמצאה מילה כזו במאגר</div>';
+    } else {
+      suggestionsEl.innerHTML = list
+        .slice(0, 8)
+        .map(
+          (w) => `
+        <div class="suggestion-item" data-id="${w.id}">
+          <span class="s-name eng">${escapeHtml(w.name)}</span>
+          <span class="s-mean">${escapeHtml(w.mean)}</span>
+        </div>`
+        )
+        .join("");
+      suggestionsEl.querySelectorAll(".suggestion-item").forEach((el) => {
+        el.addEventListener("click", () => {
+          const word = allWords.find((w) => w.id === el.dataset.id);
+          if (word) selectWord(word);
+        });
+      });
+    }
+    suggestionsEl.classList.add("show");
+  }
+
+  function hideSuggestions() {
+    suggestionsEl.classList.remove("show");
+  }
+
+  function selectWord(word) {
+    document.getElementById("rName").textContent = word.name;
+    document.getElementById("rMean").textContent = word.mean;
+    document.getElementById("rAsco").textContent = word.asco;
+    document.getElementById("rBy").textContent = word.username ? `נוסף ע"י ${word.username}` : "";
+    resultCard.classList.add("show");
+    searchInput.value = word.name;
+    hideSuggestions();
+  }
+
+  function search(query) {
+    const q = query.trim().toLowerCase();
+    resultCard.classList.remove("show");
+    if (!q) {
+      hideSuggestions();
+      return;
+    }
+    const matches = allWords.filter((w) => (w.name || "").toLowerCase().includes(q));
+    matches.sort((a, b) => {
+      const an = (a.name || "").toLowerCase();
+      const bn = (b.name || "").toLowerCase();
+      const aStarts = an.startsWith(q) ? 0 : 1;
+      const bStarts = bn.startsWith(q) ? 0 : 1;
+      if (aStarts !== bStarts) return aStarts - bStarts;
+      return an.localeCompare(bn);
+    });
+    showSuggestions(matches);
+  }
+
+  searchInput.addEventListener("input", (e) => {
+    if (!wordsLoaded) return;
+    search(e.target.value);
+  });
+
+  searchInput.addEventListener("focus", () => {
+    if (searchInput.value.trim()) search(searchInput.value);
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".search-shell")) hideSuggestions();
+  });
+
+  searchForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q || !wordsLoaded) return;
+    const exact = allWords.find((w) => (w.name || "").toLowerCase() === q);
+    if (exact) {
+      selectWord(exact);
+      return;
+    }
+    const partial = allWords
+      .filter((w) => (w.name || "").toLowerCase().includes(q))
+      .sort((a, b) => (a.name || "").length - (b.name || "").length);
+    if (partial.length) selectWord(partial[0]);
+    else showSuggestions([]);
+  });
 
   async function loadStats() {
     try {
@@ -64,6 +184,16 @@
         '<div class="stat"><div class="label">חבר/י את Firebase כדי לראות נתונים (ראו README)</div></div>';
     }
   }
+
+  loadWords()
+    .then(() => {
+      if (searchInput.value.trim()) search(searchInput.value);
+    })
+    .catch((e) => {
+      console.error(e);
+      suggestionsEl.innerHTML = '<div class="suggestion-empty">שגיאה בטעינת המאגר - ודאו שהגדרתם את Firebase (README)</div>';
+    });
+
   loadStats();
 </script>
 </body>

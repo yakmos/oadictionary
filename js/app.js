@@ -5,13 +5,13 @@ function renderChrome(activePage) {
   header.className = "site-header";
   header.innerHTML = `
     <a class="brand" href="index.html">
-      <span class="eng">OA</span><span class="dot">•</span>Dictionary
+      <img src="img/logo.jpg" alt="OADictionary" class="brand-logo" />
     </a>
     <nav class="main-nav">
-      <a href="index.html" data-page="home">בית</a>
-      <a href="practice.html" data-page="practice">תרגול אסוציאציות</a>
+      <a href="index.html" data-page="home">חיפוש אסוציאציה</a>
+      <a href="practice.html" data-page="practice">תרגול</a>
       <a href="browse.html" data-page="browse">מילון</a>
-      <a href="add.html" data-page="add">הוספת מילה</a>
+      <a href="add.html" data-page="add">שיתוף אסוציאציה</a>
     </nav>
   `;
   document.body.prepend(header);
