@@ -495,13 +495,53 @@ form.add-form textarea { min-height: 90px; resize: vertical; }
 }
 
 @media (max-width: 640px) {
-  header.site-header { padding: 14px 18px; }
-  nav.main-nav { gap: 2px; }
-  nav.main-nav a { padding: 8px 11px; font-size: .85rem; }
-  .hero-wrap { padding: 36px 18px; border-radius: 24px; }
-  .hero-wrap h1 { font-size: 1.6rem; }
+  html, body { overflow-x: hidden; }
+
+  header.site-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    position: static;
+  }
+  .brand-logo { height: 26px; }
+  nav.main-nav {
+    width: 100%;
+    justify-content: center;
+    gap: 4px;
+    row-gap: 6px;
+  }
+  nav.main-nav a { padding: 7px 12px; font-size: .8rem; }
+
+  main { padding: 20px 14px 44px; }
+
+  .hero-wrap { padding: 28px 16px; border-radius: 22px; margin-bottom: 20px; }
+  .hero-wrap h1 { font-size: 1.5rem; }
+  .hero-wrap .hero-sub { font-size: .92rem; margin-bottom: 22px; }
   .search-pill { flex-wrap: wrap; padding: 14px 16px; border-radius: 24px; }
-  .search-pill input { width: 100%; text-align: center; padding: 6px 0; }
+  .search-pill input { width: 100%; text-align: center; padding: 6px 0; font-size: 1rem; }
   .search-pill button { width: 100%; }
   .hero-illustration { display: none; }
+  .search-suggestions { right: 0; left: 0; }
+  .result-card { padding: 20px; }
+  .result-card .r-name { font-size: 1.35rem; }
+  .result-card .r-mean { font-size: 1.1rem; }
+
+  .cta-row { flex-direction: column; }
+  .cta-row .btn { width: 100%; justify-content: center; }
+
+  .stats-row { gap: 10px; }
+  .stat { flex: 1 1 45%; min-width: 0; padding: 14px 10px; }
+
+  .practice-word { font-size: 1.9rem; word-break: break-word; }
+  .stars { font-size: 1.5rem; }
+
+  .word-item { flex-wrap: wrap; }
+  .word-item .w-name { font-size: 1rem; }
+
+  .admin-bar { justify-content: center; text-align: center; }
+  .admin-actions { flex-wrap: wrap; }
+  .admin-actions .btn { flex: 1 1 auto; }
+
+  form.add-form, .practice-card, .admin-login { max-width: 100%; }
 }
