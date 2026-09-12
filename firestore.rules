@@ -3,13 +3,18 @@ rules_version = '2';
 // כללי אבטחה ל-Firestore.
 // - קריאה: פתוחה לכולם (זה מילון ציבורי).
 // - יצירה: פתוחה לכולם, אבל רק עם השדות הנכונים ובברירת מחדל confirm=0
-//   (ממתין לאישור ידני שלכם ב-Firestore console לפני שהוא יופיע באתר).
-// - עדכון: מותר רק לשדות של דירוג (likes/rating/total_rate), כדי שאף אחד
-//   לא יוכל לשנות מילה/תרגום של מישהו אחר או "לאשר" את עצמו.
-// - מחיקה: אסורה מהאתר (תמחקו ידנית ב-console אם צריך).
+//   (ממתין לאישור ב-panel הניהול / Firestore console לפני שהוא יופיע באתר).
+// - עדכון: לכל אחד - מותר רק לשדות של דירוג (likes/rating/total_rate).
+//          למנהל המחובר (Firebase Auth, אימייל קבוע) - מותר גם לשנות confirm
+//          (אישור/דחיית מילים ממתינות) דרך admin.html.
+// - מחיקה: מותרת רק למנהל המחובר (למשל מחיקת מילים לא ראויות).
 //
 // לפני production אמיתי כדאי לשקול הגבלת קצב (App Check / Cloud Functions),
 // אבל לפרויקט אישי כזה הכללים האלה סבירים כברירת מחדל.
+
+function isAdmin() {
+  return request.auth != null && request.auth.token.email == 'yakir.mos@gmail.com';
+}
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -28,10 +33,11 @@ service cloud.firestore {
                     && request.resource.data.asco is string  && request.resource.data.asco.size() < 2000
                     && request.resource.data.username is string && request.resource.data.username.size() < 255;
 
-      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+      allow update: if isAdmin()
+                    || request.resource.data.diff(resource.data).affectedKeys()
                         .hasOnly(['likes','rating','total_rate']);
 
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
   }
 }

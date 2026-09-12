@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>ניהול - OADictionary</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<main>
+  <h1 style="margin-top:0">פאנל ניהול</h1>
+
+  <div id="loginBox" class="card admin-login">
+    <label for="loginEmail" style="color:var(--text-dim);font-size:.9rem">אימייל</label>
+    <input id="loginEmail" type="email" autocomplete="username" placeholder="you@example.com" />
+    <label for="loginPass" style="color:var(--text-dim);font-size:.9rem">סיסמה</label>
+    <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" />
+    <button class="btn btn-primary" id="loginBtn">התחברות</button>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+
+  <div id="panel" style="display:none">
+    <div class="admin-bar">
+      <div id="pendingCount" style="color:var(--text-dim)"></div>
+      <button class="btn btn-outline btn-sm" id="logoutBtn">התנתקות</button>
+    </div>
+    <div id="pendingList"></div>
+    <div id="emptyMsg" style="display:none;color:var(--text-dim);text-align:center;padding:30px">
+      אין מילים ממתינות לאישור כרגע 🎉
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/app.js"></script>
+<script>
+  renderChrome("admin");
+
+  const loginBox = document.getElementById("loginBox");
+  const panel = document.getElementById("panel");
+  const loginMsg = document.getElementById("loginMsg");
+  const pendingList = document.getElementById("pendingList");
+  const pendingCount = document.getElementById("pendingCount");
+  const emptyMsg = document.getElementById("emptyMsg");
+
+  document.getElementById("loginBtn").addEventListener("click", async () => {
+    const email = document.getElementById("loginEmail").value.trim();
+    const pass = document.getElementById("loginPass").value;
+    if (!email || !pass) return;
+    loginMsg.className = "msg";
+    try {
+      await firebase.auth().signInWithEmailAndPassword(email, pass);
+    } catch (err) {
+      loginMsg.textContent = "התחברות נכשלה - בדקו אימייל/סיסמה.";
+      loginMsg.className = "msg show err";
+    }
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", () => firebase.auth().signOut());
+
+  firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+      loginBox.style.display = "none";
+      panel.style.display = "block";
+      loadPending();
+    } else {
+      loginBox.style.display = "flex";
+      panel.style.display = "none";
+    }
+  });
+
+  async function loadPending() {
+    pendingList.innerHTML = '<div class="loading">טוען...</div>';
+    try {
+      const snap = await db.collection("words").where("confirm", "==", 0).get();
+      pendingList.innerHTML = "";
+      pendingCount.textContent = `${snap.size} מילים ממתינות לאישור`;
+      emptyMsg.style.display = snap.empty ? "block" : "none";
+      snap.forEach((doc) => {
+        const d = doc.data();
+        const item = document.createElement("div");
+        item.className = "pending-item";
+        item.innerHTML = `
+          <div class="w-name eng">${escapeHtml(d.name)}</div>
+          <div class="w-mean">${escapeHtml(d.mean)}</div>
+          <div class="w-asco">${escapeHtml(d.asco)}</div>
+          <div class="w-user">נשלח ע"י: ${escapeHtml(d.username || "אנונימי")}</div>
+          <div class="admin-actions">
+            <button class="btn btn-approve btn-sm" data-action="approve">אשר</button>
+            <button class="btn btn-delete btn-sm" data-action="delete">מחק</button>
+          </div>
+        `;
+        item.querySelector('[data-action="approve"]').addEventListener("click", async (e) => {
+          e.target.disabled = true;
+          try {
+            await db.collection("words").doc(doc.id).update({ confirm: 1 });
+            item.remove();
+            refreshCount();
+          } catch (err) {
+            console.error(err);
+            e.target.disabled = false;
+            alert("שגיאה באישור המילה");
+          }
+        });
+        item.querySelector('[data-action="delete"]').addEventListener("click", async (e) => {
+          if (!confirm(`למחוק את "${d.name}"?`)) return;
+          e.target.disabled = true;
+          try {
+            await db.collection("words").doc(doc.id).delete();
+            item.remove();
+            refreshCount();
+          } catch (err) {
+            console.error(err);
+            e.target.disabled = false;
+            alert("שגיאה במחיקת המילה");
+          }
+        });
+        pendingList.appendChild(item);
+      });
+    } catch (err) {
+      console.error(err);
+      pendingList.innerHTML = '<div class="loading">שגיאה בטעינת המילים הממתינות.</div>';
+    }
+  }
+
+  function refreshCount() {
+    const left = pendingList.querySelectorAll(".pending-item").length;
+    pendingCount.textContent = `${left} מילים ממתינות לאישור`;
+    emptyMsg.style.display = left === 0 ? "block" : "none";
+  }
+</script>
+</body>
+</html>

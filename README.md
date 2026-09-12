@@ -56,8 +56,16 @@ gh repo create oadictionary --public --source=. --push
 
 `data/words_recovered.csv` הופק ישירות מקובץ ה-`words.ibd` (קובץ tablespace גולמי של InnoDB/MySQL) בפירוק בינארי ידני ברמת העמוד/רשומה - לא היה זמין קובץ סכימה (.frm/SDI). מבנה הטבלה אומת מול קוד המקור האמיתי (`save.php`, `rating.php`) שנמצא ב-`newoadictionary.zip` בדרייב שלכם: `words(name, mean, asco, username, confirm, likes, rating, total_rate)`. כל 3,650 הרשומות נבדקו (rating = total_rate/likes בכל שורה) ונטענו בהצלחה.
 
+## פאנל ניהול
+
+בכתובת `admin.html` (לא מקושר מהתפריט הציבורי) יש פאנל ניהול לאישור/מחיקה של מילים
+ממתינות (`confirm == 0`) שנשלחו דרך `add.html`, בלי להיכנס ל-Firestore console.
+
+- מוגן ב-Firebase Authentication (Email/Password) - רק המשתמש שהוגדר כאדמין
+  (לפי אימייל, ראו `isAdmin()` ב-`firestore.rules`) יכול לאשר/למחוק.
+- ההתחברות נוצרה כבר עבורכם ב-Firebase console -> Authentication -> Users.
+
 ## מה אפשר להוסיף בהמשך
 
-- פאנל ניהול קטן לאישור מילים חדשות (`confirm == 0`) בלי להיכנס ל-Firestore console.
-- התחברות עם Google/Firebase Auth כדי לדעת מי הוסיף/דירג מה.
 - מסך "הכי פופולריות" ממוין לפי `rating`/`likes`.
+- עוד ניהול ב-panel: עריכת מילה קיימת, חיפוש/סינון, ריבוי מנהלים (custom claims).
