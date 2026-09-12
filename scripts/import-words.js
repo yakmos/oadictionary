@@ -40,12 +40,27 @@ const db = admin.firestore();
 const CSV_PATH = path.join(__dirname, "..", "data", "words_recovered.csv");
 const BATCH_SIZE = 400; // Firestore מגביל ל-500 פעולות בבאץ' אחד
 
+async function deleteExisting(wordsCol) {
+  const snap = await wordsCol.get();
+  if (snap.empty) return;
+  console.log(`מוחק ${snap.size} מסמכים קיימים לפני ייבוא נקי מחדש...`);
+  const docs = snap.docs;
+  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    for (const d of docs.slice(i, i + BATCH_SIZE)) batch.delete(d.ref);
+    await batch.commit();
+  }
+}
+
 async function main() {
+  // bom: true מסיר BOM (Byte Order Mark) שמופיע בתחילת הקובץ, כדי ש-"id" לא
+  // ייקרא בטעות "﻿id" (מה שהיה גורם ל-legacyId להיות NaN).
   const raw = fs.readFileSync(CSV_PATH, "utf-8");
-  const records = parse(raw, { columns: true, skip_empty_lines: true });
+  const records = parse(raw, { columns: true, skip_empty_lines: true, bom: true });
   console.log(`נמצאו ${records.length} מילים בקובץ ה-CSV. מתחיל ייבוא...`);
 
   const wordsCol = db.collection("words");
+  await deleteExisting(wordsCol);
 
   let imported = 0;
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
