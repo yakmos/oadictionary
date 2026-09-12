@@ -9,29 +9,31 @@
 </head>
 <body>
 
-<main>
+<main id="main-content" tabindex="-1">
   <div class="card practice-card">
-    <div class="practice-hint">מהי המשמעות של המילה?</div>
-    <div class="practice-word eng" id="wordEl">...</div>
-    <div id="scoreLine" style="color:var(--navy-soft);margin-top:6px;"></div>
+    <h1 class="sr-only">תרגול אסוציאציות</h1>
+    <div class="practice-hint" id="wordLabel">מהי המשמעות של המילה?</div>
+    <div class="practice-word eng" id="wordEl" lang="en" role="region" aria-live="polite" aria-labelledby="wordLabel">...</div>
+    <div id="scoreLine" style="color:var(--navy-soft);margin-top:6px;" aria-live="polite"></div>
 
     <div class="cta-row" style="margin-top:20px;">
-      <button class="btn btn-primary" id="revealBtn">גלה תשובה</button>
-      <button class="btn btn-secondary" id="nextBtn">מילה הבאה &larr;</button>
+      <button type="button" class="btn btn-primary" id="revealBtn" aria-expanded="false" aria-controls="revealBox">גלה תשובה</button>
+      <button type="button" class="btn btn-secondary" id="nextBtn">מילה הבאה &larr;</button>
     </div>
 
-    <div class="reveal-box" id="revealBox">
+    <div class="reveal-box" id="revealBox" role="region" aria-live="polite" aria-label="התשובה והאסוציאציה">
       <div class="mean" id="meanEl"></div>
       <div class="asco" id="ascoEl"></div>
       <div class="by-line" id="byEl"></div>
 
-      <div class="stars" id="stars">
-        <span class="star" data-v="1">&#9733;</span>
-        <span class="star" data-v="2">&#9733;</span>
-        <span class="star" data-v="3">&#9733;</span>
-        <span class="star" data-v="4">&#9733;</span>
-        <span class="star" data-v="5">&#9733;</span>
+      <div class="stars" id="stars" role="group" aria-label="דרגו את האסוציאציה מ-1 עד 5 כוכבים">
+        <button type="button" class="star" data-v="1" aria-label="דרג כוכב אחד מתוך 5">&#9734;</button>
+        <button type="button" class="star" data-v="2" aria-label="דרג 2 כוכבים מתוך 5">&#9734;</button>
+        <button type="button" class="star" data-v="3" aria-label="דרג 3 כוכבים מתוך 5">&#9734;</button>
+        <button type="button" class="star" data-v="4" aria-label="דרג 4 כוכבים מתוך 5">&#9734;</button>
+        <button type="button" class="star" data-v="5" aria-label="דרג 5 כוכבים מתוך 5">&#9734;</button>
       </div>
+      <div class="sr-only" role="status" id="ratingStatus"></div>
     </div>
   </div>
 </main>
@@ -77,10 +79,23 @@
     return snap.docs[0];
   }
 
+  const ratingStatus = document.getElementById("ratingStatus");
+
+  function setStars(val) {
+    document.querySelectorAll("#stars .star").forEach((s) => {
+      const filled = Number(s.dataset.v) <= val;
+      s.classList.toggle("filled", filled);
+      s.textContent = filled ? "★" : "☆";
+    });
+  }
+
   async function loadNext() {
     revealBox.classList.remove("show");
+    revealBtn.setAttribute("aria-expanded", "false");
     ratedThisRound = false;
-    document.querySelectorAll("#stars .star").forEach((s) => s.classList.remove("filled"));
+    setStars(0);
+    document.querySelectorAll("#stars .star").forEach((s) => { s.disabled = false; });
+    ratingStatus.textContent = "";
     wordEl.textContent = "טוען...";
     try {
       const doc = await fetchRandomWord();
@@ -99,17 +114,24 @@
     }
   }
 
-  revealBtn.addEventListener("click", () => revealBox.classList.add("show"));
+  revealBtn.addEventListener("click", () => {
+    revealBox.classList.add("show");
+    revealBtn.setAttribute("aria-expanded", "true");
+  });
   document.getElementById("nextBtn").addEventListener("click", loadNext);
+
+  function starWord(n) {
+    return n === 1 ? "כוכב אחד" : `${n} כוכבים`;
+  }
 
   document.getElementById("stars").addEventListener("click", async (e) => {
     const star = e.target.closest(".star");
     if (!star || !currentDoc || ratedThisRound) return;
     const val = Number(star.dataset.v);
-    document.querySelectorAll("#stars .star").forEach((s) => {
-      s.classList.toggle("filled", Number(s.dataset.v) <= val);
-    });
+    setStars(val);
     ratedThisRound = true;
+    document.querySelectorAll("#stars .star").forEach((s) => { s.disabled = true; });
+    ratingStatus.textContent = `דירגתם ${starWord(val)}, תודה!`;
     try {
       await db.runTransaction(async (tx) => {
         const ref = db.collection("words").doc(currentDoc.id);

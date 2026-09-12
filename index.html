@@ -9,7 +9,7 @@
 </head>
 <body>
 
-<main>
+<main id="main-content" tabindex="-1">
   <section class="hero-wrap">
     <img src="img/hero-woman.jpg" alt="" class="hero-illustration" />
     <div class="hero-inner">
@@ -20,22 +20,25 @@
       </p>
 
       <div class="search-shell">
-        <form class="search-pill" id="searchForm" autocomplete="off">
+        <form class="search-pill" id="searchForm" autocomplete="off" role="search">
+          <label for="searchInput" class="sr-only">חיפוש מילה באנגלית</label>
           <input
             id="searchInput"
             class="eng"
             type="text"
+            lang="en"
             placeholder="לדוגמה: Astonishment"
-            aria-label="חיפוש מילה באנגלית"
+            aria-describedby="searchHelp"
           />
           <button type="submit">חיפוש</button>
         </form>
-        <div class="search-suggestions" id="suggestions"></div>
+        <span id="searchHelp" class="sr-only">התוצאות יופיעו כרשימת הצעות מתחת לתיבת החיפוש תוך כדי הקלדה</span>
+        <div class="search-suggestions" id="suggestions" role="region" aria-live="polite" aria-label="הצעות חיפוש"></div>
       </div>
 
-      <div class="result-card" id="resultCard">
+      <div class="result-card" id="resultCard" role="region" aria-live="polite" aria-label="תוצאת החיפוש">
         <div class="r-top">
-          <span class="r-name eng" id="rName"></span>
+          <span class="r-name eng" id="rName" lang="en"></span>
           <span class="r-mean" id="rMean"></span>
         </div>
         <div class="r-asco" id="rAsco"></div>
@@ -81,16 +84,16 @@
 
   function showSuggestions(list) {
     if (!list.length) {
-      suggestionsEl.innerHTML = '<div class="suggestion-empty">לא נמצאה מילה כזו במאגר</div>';
+      suggestionsEl.innerHTML = '<p class="suggestion-empty">לא נמצאה מילה כזו במאגר</p>';
     } else {
       suggestionsEl.innerHTML = list
         .slice(0, 8)
         .map(
           (w) => `
-        <div class="suggestion-item" data-id="${w.id}">
-          <span class="s-name eng">${escapeHtml(w.name)}</span>
+        <button type="button" class="suggestion-item" data-id="${w.id}" aria-label="${escapeHtml(w.name)} - ${escapeHtml(w.mean)}">
+          <span class="s-name eng" lang="en">${escapeHtml(w.name)}</span>
           <span class="s-mean">${escapeHtml(w.mean)}</span>
-        </div>`
+        </button>`
         )
         .join("");
       suggestionsEl.querySelectorAll(".suggestion-item").forEach((el) => {

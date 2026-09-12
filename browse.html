@@ -9,12 +9,13 @@
 </head>
 <body>
 
-<main>
+<main id="main-content" tabindex="-1">
   <h1 style="margin-top:0">עיון במילון</h1>
   <div class="search-bar">
+    <label for="searchInput" class="sr-only">חיפוש מילה באנגלית או בעברית</label>
     <input id="searchInput" type="text" placeholder="חיפוש מילה באנגלית או בעברית..." />
   </div>
-  <div id="listWrap"><div class="loading">טוען מילים...</div></div>
+  <div id="listWrap" aria-live="polite"><p class="loading">טוען מילים...</p></div>
 </main>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -41,31 +42,36 @@
 
   function render(list) {
     if (!list.length) {
-      listWrap.innerHTML = '<div class="loading">לא נמצאו מילים תואמות</div>';
+      listWrap.innerHTML = '<p class="loading">לא נמצאו מילים תואמות</p>';
       return;
     }
     const visible = list.slice(0, shown);
     listWrap.innerHTML = `
       <div class="word-list">
         ${visible.map((w) => `
-          <div class="word-item" data-id="${w.id}">
-            <div>
-              <span class="w-name eng">${escapeHtml(w.name)}</span>
-              &nbsp;-&nbsp;
-              <span class="w-mean">${escapeHtml(w.mean)}</span>
-              <div class="word-detail">
-                ${escapeHtml(w.asco)}
-                ${w.username ? `<div class="pill" style="margin-top:8px;">נוסף ע"י ${escapeHtml(w.username)}</div>` : ""}
+          <button type="button" class="word-item" data-id="${w.id}" aria-expanded="false" aria-controls="detail-${w.id}">
+            <div class="w-row">
+              <div>
+                <span class="w-name eng" lang="en">${escapeHtml(w.name)}</span>
+                &nbsp;-&nbsp;
+                <span class="w-mean">${escapeHtml(w.mean)}</span>
               </div>
+              <div class="pill">${w.likes ? "&#9733; " + Number(w.rating || 0).toFixed(1) : "עדיין ללא דירוג"}</div>
             </div>
-            <div class="pill">${w.likes ? "&#9733; " + Number(w.rating || 0).toFixed(1) : "עדיין ללא דירוג"}</div>
-          </div>
+            <div class="word-detail" id="detail-${w.id}">
+              ${escapeHtml(w.asco)}
+              ${w.username ? `<div class="pill" style="margin-top:8px;">נוסף ע"י ${escapeHtml(w.username)}</div>` : ""}
+            </div>
+          </button>
         `).join("")}
       </div>
-      ${list.length > shown ? `<div class="cta-row" style="margin-top:16px;"><button class="btn btn-secondary" id="loadMoreBtn">טען עוד</button></div>` : ""}
+      ${list.length > shown ? `<div class="cta-row" style="margin-top:16px;"><button type="button" class="btn btn-secondary" id="loadMoreBtn">טען עוד</button></div>` : ""}
     `;
     listWrap.querySelectorAll(".word-item").forEach((el) => {
-      el.addEventListener("click", () => el.classList.toggle("open"));
+      el.addEventListener("click", () => {
+        const isOpen = el.classList.toggle("open");
+        el.setAttribute("aria-expanded", String(isOpen));
+      });
     });
     const moreBtn = document.getElementById("loadMoreBtn");
     if (moreBtn) moreBtn.addEventListener("click", () => { shown += PAGE_SIZE; render(currentFiltered()); });
@@ -93,7 +99,7 @@
     })
     .catch((e) => {
       console.error(e);
-      listWrap.innerHTML = '<div class="loading">שגיאה בטעינת המילון - ודאו שהגדרתם את Firebase (README)</div>';
+      listWrap.innerHTML = '<p class="loading" role="alert">שגיאה בטעינת המילון - ודאו שהגדרתם את Firebase (README)</p>';
     });
 </script>
 </body>

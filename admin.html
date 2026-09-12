@@ -10,27 +10,27 @@
 </head>
 <body>
 
-<main>
+<main id="main-content" tabindex="-1">
   <h1 style="margin-top:0">פאנל ניהול</h1>
 
-  <div id="loginBox" class="card admin-login">
+  <form id="loginBox" class="card admin-login">
     <label for="loginEmail" style="color:var(--navy-soft);font-size:.9rem">אימייל</label>
-    <input id="loginEmail" type="email" autocomplete="username" placeholder="you@example.com" />
+    <input id="loginEmail" type="email" autocomplete="username" required aria-required="true" placeholder="you@example.com" />
     <label for="loginPass" style="color:var(--navy-soft);font-size:.9rem">סיסמה</label>
-    <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" />
-    <button class="btn btn-primary" id="loginBtn">התחברות</button>
-    <div class="msg" id="loginMsg"></div>
-  </div>
+    <input id="loginPass" type="password" autocomplete="current-password" required aria-required="true" placeholder="••••••••" />
+    <button type="submit" class="btn btn-primary" id="loginBtn">התחברות</button>
+    <div class="msg" id="loginMsg" role="alert"></div>
+  </form>
 
   <div id="panel" style="display:none">
     <div class="admin-bar">
-      <div id="pendingCount" style="color:var(--navy-soft)"></div>
-      <button class="btn btn-outline btn-sm" id="logoutBtn">התנתקות</button>
+      <div id="pendingCount" style="color:var(--navy-soft)" aria-live="polite"></div>
+      <button type="button" class="btn btn-outline btn-sm" id="logoutBtn">התנתקות</button>
     </div>
-    <div id="pendingList"></div>
-    <div id="emptyMsg" style="display:none;color:var(--navy-soft);text-align:center;padding:30px">
+    <div id="pendingList" aria-live="polite"></div>
+    <p id="emptyMsg" style="display:none;color:var(--navy-soft);text-align:center;padding:30px">
       אין מילים ממתינות לאישור כרגע 🎉
-    </div>
+    </p>
   </div>
 </main>
 
@@ -49,7 +49,8 @@
   const pendingCount = document.getElementById("pendingCount");
   const emptyMsg = document.getElementById("emptyMsg");
 
-  document.getElementById("loginBtn").addEventListener("click", async () => {
+  loginBox.addEventListener("submit", async (e) => {
+    e.preventDefault();
     const email = document.getElementById("loginEmail").value.trim();
     const pass = document.getElementById("loginPass").value;
     if (!email || !pass) return;
@@ -76,7 +77,7 @@
   });
 
   async function loadPending() {
-    pendingList.innerHTML = '<div class="loading">טוען...</div>';
+    pendingList.innerHTML = '<p class="loading">טוען...</p>';
     try {
       const snap = await db.collection("words").where("confirm", "==", 0).get();
       pendingList.innerHTML = "";
@@ -87,13 +88,13 @@
         const item = document.createElement("div");
         item.className = "pending-item";
         item.innerHTML = `
-          <div class="w-name eng">${escapeHtml(d.name)}</div>
+          <div class="w-name eng" lang="en">${escapeHtml(d.name)}</div>
           <div class="w-mean">${escapeHtml(d.mean)}</div>
           <div class="w-asco">${escapeHtml(d.asco)}</div>
           <div class="w-user">נשלח ע"י: ${escapeHtml(d.username || "אנונימי")}</div>
           <div class="admin-actions">
-            <button class="btn btn-approve btn-sm" data-action="approve">אשר</button>
-            <button class="btn btn-delete btn-sm" data-action="delete">מחק</button>
+            <button type="button" class="btn btn-approve btn-sm" data-action="approve" aria-label="אשר את המילה ${escapeHtml(d.name)}">אשר</button>
+            <button type="button" class="btn btn-delete btn-sm" data-action="delete" aria-label="מחק את המילה ${escapeHtml(d.name)}">מחק</button>
           </div>
         `;
         item.querySelector('[data-action="approve"]').addEventListener("click", async (e) => {
@@ -125,7 +126,7 @@
       });
     } catch (err) {
       console.error(err);
-      pendingList.innerHTML = '<div class="loading">שגיאה בטעינת המילים הממתינות.</div>';
+      pendingList.innerHTML = '<p class="loading" role="alert">שגיאה בטעינת המילים הממתינות.</p>';
     }
   }
 

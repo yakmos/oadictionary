@@ -9,7 +9,7 @@
 </head>
 <body>
 
-<main>
+<main id="main-content" tabindex="-1">
   <h1 style="margin-top:0">הוספת מילה ואסוציאציה חדשה</h1>
   <p style="color:var(--navy-soft)">
     יש לכם דרך מגניבה לזכור מילה באנגלית? שתפו אותה עם כולם!
@@ -18,22 +18,22 @@
   <form class="add-form card" id="addForm">
     <div>
       <label for="fName">המילה באנגלית</label>
-      <input id="fName" class="eng" type="text" required placeholder="Astonishment" />
+      <input id="fName" class="eng" type="text" lang="en" required aria-required="true" placeholder="Astonishment" />
     </div>
     <div>
       <label for="fMean">התרגום לעברית</label>
-      <input id="fMean" type="text" required placeholder="תדהמה" />
+      <input id="fMean" type="text" required aria-required="true" placeholder="תדהמה" />
     </div>
     <div>
       <label for="fAsco">האסוציאציה / ההסבר שלכם</label>
-      <textarea id="fAsco" required placeholder="כתבו כאן איך אתם זוכרים את המילה..."></textarea>
+      <textarea id="fAsco" required aria-required="true" placeholder="כתבו כאן איך אתם זוכרים את המילה..."></textarea>
     </div>
     <div>
       <label for="fUser">השם שלכם (יוצג לצד האסוציאציה)</label>
-      <input id="fUser" type="text" required placeholder="לדוגמה: יקיר" />
+      <input id="fUser" type="text" required aria-required="true" placeholder="לדוגמה: יקיר" />
     </div>
     <button type="submit" class="btn btn-primary">שליחה למאגר</button>
-    <div class="msg" id="formMsg"></div>
+    <div class="msg" id="formMsg" role="alert"></div>
   </form>
 </main>
 
