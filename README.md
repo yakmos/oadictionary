@@ -22,34 +22,23 @@ scripts/import-words.js  סקריפט לייבוא הנתונים ל-Firestore
 data/words_recovered.csv  הנתונים המשוחזרים (3,650 מילים)
 ```
 
-## שלב 1: יצירת פרויקט Firebase
+## שלב 1: פרויקט Firebase
 
-1. גשו ל-<https://console.firebase.google.com/> ולחצו **Add project**.
-2. תנו שם לפרויקט (למשל `oadictionary-v2`), אפשר לכבות Google Analytics (לא נחוץ).
-3. בתוך הפרויקט: **Build -> Firestore Database -> Create database**. בחרו מיקום (למשל `eur3` / `me-west1`), ולכתחילה תוכלו לבחור **Start in test mode** (נחמיר את הכללים בהמשך).
-4. **Project settings** (גלגל השיניים למעלה) -> גללו ל-**Your apps** -> לחצו על סמל ה-Web `</>` -> תנו שם לאפליקציה -> **Register app**.
-5. Firebase יציג לכם קטע קוד עם אובייקט `firebaseConfig`. העתיקו אותו לתוך `js/firebase-config.js` (במקום הערכים `"REPLACE_ME"`).
-6. צרו גם קובץ `scripts/import-config.js` (העתק של `scripts/import-config.example.js`) עם אותם ערכים בדיוק - הוא משמש את סקריפט הייבוא. **קובץ זה נמצא ב-.gitignore ולא יעלה ל-GitHub** (זה בסדר, ה-config עצמו אינו סוד, אבל אין סיבה לשכפל אותו).
+✅ **כבר בוצע** - פרויקט Firebase בשם **Oadictionary** (מזהה `oadictionary-c21fb`) כבר קיים, עם:
+- Firestore Database פעיל באזור `me-west1` (תל אביב).
+- אפליקציית Web רשומה בשם "OADictionary Web", וה-config שלה כבר מוטמע ב-`js/firebase-config.js`.
+- כללי אבטחה (`firestore.rules`) ואינדקס (`firestore.indexes.json`) פרוסים בפועל בפרויקט.
+
+אם בכל זאת תרצו להקים פרויקט חדש משלכם בעתיד: **Project settings** (גלגל שיניים) -> **Your apps** -> Web `</>` -> Register app, ואת ה-config שיוצג להעתיק ל-`js/firebase-config.js`.
 
 ## שלב 2: ייבוא 3,650 המילים
 
+הייבוא משתמש ב-**Firebase Admin SDK** עם מפתח שירות (service account key), כך שהוא עוקף את כללי האבטחה לגמרי - אין צורך לפתוח/לסגור כללים באופן זמני.
+
 1. ודאו ש-Node.js מותקן אצלכם (`node -v`).
 2. בתיקיית הפרויקט: `npm install`.
-3. **חשוב**: לפני הייבוא, ב-Firestore console -> **Rules**, הדביקו זמנית:
-   ```
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /{document=**} {
-         allow read, write: if true;
-       }
-     }
-   }
-   ```
-   ולחצו **Publish**. (הסקריפט משתמש ב-SDK הרגיל של הלקוח ולא ב-Admin SDK, כדי שלא תצטרכו להוריד/לשמור מפתח שירות רגיש - אז הוא צריך הרשאת כתיבה פתוחה זמנית.)
+3. הורידו מפתח שירות: Firebase console -> **Project settings -> Service accounts** -> **Generate new private key**. שמרו את הקובץ שיורד בשם **`scripts/service-account-key.json`** (הקובץ ב-`.gitignore` - **לעולם אל תעלו אותו ל-GitHub ואל תשתפו אותו**, הוא נותן גישת אדמין מלאה לפרויקט).
 4. הריצו: `npm run import`. אמורות להופיע הודעות התקדמות עד "הייבוא הושלם בהצלחה!".
-5. **מיד אחרי הייבוא**, חזרו ל-Firestore console -> Rules, ומחקו את מה שהדבקתם - במקום זה **הדביקו את התוכן של `firestore.rules` מהפרויקט הזה** ולחצו Publish. זה נועל את מי שיכול לכתוב/למחוק מילים של אחרים.
-6. אופציונלי אבל מומלץ - אם יש לכם [Firebase CLI](https://firebase.google.com/docs/cli) מותקן: `firebase deploy --only firestore:indexes` ייצור אוטומטית את האינדקס הדרוש לדף התרגול (שליפת מילה אקראית). אם לא - בפעם הראשונה שתפתחו את `practice.html` תקבלו שגיאה בקונסול של הדפדפן עם קישור "Create index" - פשוט תלחצו עליו, תחכו דקה, ותרעננו.
 
 ## שלב 3: העלאה ל-GitHub Pages
 

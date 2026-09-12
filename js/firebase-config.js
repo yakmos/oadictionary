@@ -9,12 +9,13 @@
 // לא דרך הסתרת המפתחות. עדיין, אין צורך לשתף אותם עם אף אחד שלא צריך גישה לפרויקט.
 
 const firebaseConfig = {
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME.firebaseapp.com",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME.appspot.com",
-  messagingSenderId: "REPLACE_ME",
-  appId: "REPLACE_ME",
+  apiKey: "AIzaSyCd-fAaiYp-dy1LlgmEOcegJKo4pecdJ5M",
+  authDomain: "oadictionary-c21fb.firebaseapp.com",
+  projectId: "oadictionary-c21fb",
+  storageBucket: "oadictionary-c21fb.firebasestorage.app",
+  messagingSenderId: "585908436654",
+  appId: "1:585908436654:web:a0fd366ea1b5713ce4773f",
+  measurementId: "G-07DJXK1T01",
 };
 
 firebase.initializeApp(firebaseConfig);

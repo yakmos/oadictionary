@@ -4,14 +4,14 @@
  * -----------------
  * מייבא את הקובץ data/words_recovered.csv (המילים ששוחזרו מ-words.ibd) ל-Firestore.
  *
+ * משתמש ב-Firebase Admin SDK + מפתח שירות (service account key), ולכן עוקף
+ * את כללי האבטחה (firestore.rules) לגמרי - אין צורך לפתוח/לסגור כללים באופן זמני.
+ *
  * לפני הרצה:
- *   1. npm install            (מתקין firebase ו-csv-parse - ראו package.json בתיקייה זו)
- *   2. ודאו ש-js/firebase-config.js מולא בפרטי הפרויקט שלכם (מעתיקים את אותו
- *      אובייקט config גם ל-scripts/import-config.js - ראו קובץ לדוגמה).
- *   3. **חשוב**: לפני הייבוא, הגדירו זמנית ב-Firestore console כללים פתוחים
- *      (Rules -> "allow read, write: if true;") כי הסקריפט משתמש ב-SDK הרגיל
- *      (לא ב-Admin SDK, כדי שלא תצטרכו לטפל במפתח שירות רגיש). אחרי שהייבוא
- *      מסתיים בהצלחה, העתיקו בחזרה את התוכן של firestore.rules בפרויקט הזה.
+ *   1. npm install
+ *   2. הורידו מפתח שירות: Firebase console -> Project settings -> Service accounts
+ *      -> Generate new private key, ושמרו אותו כ- scripts/service-account-key.json
+ *      (הקובץ הזה נמצא ב-.gitignore ולעולם לא יעלה ל-GitHub - אל תשתפו אותו!)
  *
  * הרצה:
  *   node scripts/import-words.js
@@ -20,23 +20,22 @@
 const fs = require("fs");
 const path = require("path");
 const { parse } = require("csv-parse/sync");
-const { initializeApp } = require("firebase/app");
-const {
-  getFirestore,
-  collection,
-  writeBatch,
-  doc,
-} = require("firebase/firestore");
+const admin = require("firebase-admin");
 
-const configPath = path.join(__dirname, "import-config.js");
-if (!fs.existsSync(configPath)) {
+const keyPath = path.join(__dirname, "service-account-key.json");
+if (!fs.existsSync(keyPath)) {
   console.error(
-    "\nחסר קובץ scripts/import-config.js.\n" +
-    "העתיקו את scripts/import-config.example.js לשם ומלאו את פרטי ה-Firebase שלכם.\n"
+    "\nחסר קובץ scripts/service-account-key.json.\n" +
+    "הורידו אותו מ-Firebase console -> Project settings -> Service accounts -> Generate new private key.\n"
   );
   process.exit(1);
 }
-const firebaseConfig = require("./import-config.js");
+const serviceAccount = require(keyPath);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+const db = admin.firestore();
 
 const CSV_PATH = path.join(__dirname, "..", "data", "words_recovered.csv");
 const BATCH_SIZE = 400; // Firestore מגביל ל-500 פעולות בבאץ' אחד
@@ -46,16 +45,14 @@ async function main() {
   const records = parse(raw, { columns: true, skip_empty_lines: true });
   console.log(`נמצאו ${records.length} מילים בקובץ ה-CSV. מתחיל ייבוא...`);
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const wordsCol = collection(db, "words");
+  const wordsCol = db.collection("words");
 
   let imported = 0;
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const chunk = records.slice(i, i + BATCH_SIZE);
-    const batch = writeBatch(db);
+    const batch = db.batch();
     for (const row of chunk) {
-      const ref = doc(wordsCol); // מזהה חדש שנוצר אוטומטית
+      const ref = wordsCol.doc(); // מזהה חדש שנוצר אוטומטית
       batch.set(ref, {
         legacyId: Number(row.id),
         name: row.name,
@@ -75,7 +72,6 @@ async function main() {
   }
 
   console.log("\nהייבוא הושלם בהצלחה!");
-  console.log("אל תשכחו להחזיר את הכללים המחמירים מ-firestore.rules ב-Firestore console.");
   process.exit(0);
 }
 

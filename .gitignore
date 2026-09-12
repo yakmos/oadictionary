@@ -1,5 +1,6 @@
 node_modules/
 scripts/import-config.js
+scripts/service-account-key.json
 .firebase/
 .DS_Store
 Thumbs.db
