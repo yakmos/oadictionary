@@ -2,18 +2,27 @@ rules_version = '2';
 
 // כללי אבטחה ל-Firestore.
 // - קריאה: פתוחה לכולם (זה מילון ציבורי).
-// - יצירה: פתוחה לכולם, אבל רק עם השדות הנכונים ובברירת מחדל confirm=0
-//   (ממתין לאישור ב-panel הניהול / Firestore console לפני שהוא יופיע באתר).
+// - יצירה: פתוחה לכולם (גם ללא התחברות - "אורח"), אבל רק עם השדות הנכונים
+//   ובברירת מחדל confirm=0 (ממתין לאישור ב-panel הניהול). אם המשתמש מחובר
+//   (Google Sign-In) אפשר גם לצרף שדה uid - רק אם הוא שווה בדיוק ל-uid של
+//   המשתמש המחובר עצמו (למניעת התחזות למישהו אחר).
 // - עדכון: לכל אחד - מותר רק לשדות של דירוג (likes/rating/total_rate).
-//          למנהל המחובר (Firebase Auth, אימייל קבוע) - מותר גם לשנות confirm
-//          (אישור/דחיית מילים ממתינות) דרך admin.html.
-// - מחיקה: מותרת רק למנהל המחובר (למשל מחיקת מילים לא ראויות).
+//          לבעל המילה המחובר (uid תואם) - מותר לערוך name/mean/asco, אבל
+//          זה תמיד מאפס את confirm בחזרה ל-0 (חוזר לתור האישור של המנהל).
+//          למנהל המחובר (Firebase Auth, אימייל קבוע) - מותר הכול, כולל
+//          אישור/דחיית מילים ממתינות דרך admin.html.
+// - מחיקה: מותרת למנהל המחובר, וגם לבעל המילה המחובר (uid תואם) על המילה
+//          שלו בלבד.
 //
 // לפני production אמיתי כדאי לשקול הגבלת קצב (App Check / Cloud Functions),
 // אבל לפרויקט אישי כזה הכללים האלה סבירים כברירת מחדל.
 
 function isAdmin() {
   return request.auth != null && request.auth.token.email == 'yakir.mos@gmail.com';
+}
+
+function isOwner(data) {
+  return request.auth != null && data.uid is string && data.uid == request.auth.uid;
 }
 
 service cloud.firestore {
@@ -31,13 +40,21 @@ service cloud.firestore {
                     && request.resource.data.name is string  && request.resource.data.name.size() < 255
                     && request.resource.data.mean is string  && request.resource.data.mean.size() < 255
                     && request.resource.data.asco is string  && request.resource.data.asco.size() < 2000
-                    && request.resource.data.username is string && request.resource.data.username.size() < 255;
+                    && request.resource.data.username is string && request.resource.data.username.size() < 255
+                    && (!('uid' in request.resource.data)
+                        || (request.auth != null && request.resource.data.uid == request.auth.uid));
 
       allow update: if isAdmin()
                     || request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['likes','rating','total_rate']);
+                        .hasOnly(['likes','rating','total_rate'])
+                    || (isOwner(resource.data)
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','mean','asco','confirm'])
+                        && request.resource.data.confirm == 0
+                        && request.resource.data.name is string  && request.resource.data.name.size() < 255
+                        && request.resource.data.mean is string  && request.resource.data.mean.size() < 255
+                        && request.resource.data.asco is string  && request.resource.data.asco.size() < 2000);
 
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || isOwner(resource.data);
     }
   }
 }

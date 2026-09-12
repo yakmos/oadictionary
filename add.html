@@ -31,6 +31,7 @@
     <div>
       <label for="fUser">השם שלכם (יוצג לצד האסוציאציה)</label>
       <input id="fUser" type="text" required aria-required="true" placeholder="לדוגמה: יקיר" />
+      <p class="field-hint" id="authHint" role="status"></p>
     </div>
     <button type="submit" class="btn btn-primary">שליחה למאגר</button>
     <div class="msg" id="formMsg" role="alert"></div>
@@ -39,6 +40,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="js/firebase-config.js"></script>
 <script src="js/app.js"></script>
 <script>
@@ -46,6 +48,26 @@
 
   const form = document.getElementById("addForm");
   const msg = document.getElementById("formMsg");
+  const fUser = document.getElementById("fUser");
+  const authHint = document.getElementById("authHint");
+
+  // אם מחוברים עם גוגל - השם ממולא אוטומטית מהחשבון ולא ניתן לעריכה
+  // (כדי שהמילה תשויך לחשבון ותופיע ב"המילים שלי"). בלי התחברות אפשר
+  // עדיין להוסיף מילה כרגיל, ולהקליד שם משלכם.
+  if (typeof firebase !== "undefined" && firebase.auth) {
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        fUser.value = user.displayName || user.email || "";
+        fUser.readOnly = true;
+        authHint.textContent = "מחוברים עם גוגל - השם מתמלא אוטומטית, והמילה תופיע גם ב\"המילים שלי\".";
+      } else {
+        fUser.readOnly = false;
+        if (fUser.dataset.wasAuto) fUser.value = "";
+        authHint.textContent = "אפשר להוסיף גם בלי להתחבר. התחברות עם גוגל (בפינה העליונה) תמלא את השם אוטומטית ותאפשר לערוך/למחוק את המילים שלכם אחר כך.";
+      }
+      fUser.dataset.wasAuto = user ? "1" : "";
+    });
+  }
 
   // התראה בזמן אמת למנהל דרך ntfy.sh (שירות push חינמי, בלי הרשמה/שרת).
   // ראו README - "התראות על מילים חדשות" - איך להירשם לקבל אותן.
@@ -81,7 +103,7 @@
 
     try {
       const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
-      await db.collection("words").add({
+      const wordData = {
         name: capitalized,
         mean,
         asco,
@@ -92,11 +114,15 @@
         total_rate: 0,
         rand: Math.random(),
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
+      };
+      const currentUser = firebase.auth && firebase.auth().currentUser;
+      if (currentUser) wordData.uid = currentUser.uid;
+      await db.collection("words").add(wordData);
       notifyAdmin(capitalized, mean, username);
       msg.textContent = "תודה! המילה נשלחה ותופיע לאחר אישור.";
       msg.className = "msg show ok";
       form.reset();
+      if (currentUser) fUser.value = currentUser.displayName || currentUser.email || "";
     } catch (err) {
       console.error(err);
       msg.textContent = "משהו השתבש - נסו שוב, או ודאו שהגדרתם את Firebase (README).";

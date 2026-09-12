@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>המילים שלי - OADictionary</title>
+<link rel="icon" href="img/favicon.ico" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<main id="main-content" tabindex="-1">
+  <h1 style="margin-top:0">המילים שלי</h1>
+  <p style="color:var(--navy-soft)">
+    כל המילים שהוספתם למאגר כשהייתם מחוברים עם גוגל - אפשר לערוך או למחוק כאן.
+  </p>
+
+  <div id="signedOutBox" class="card" style="text-align:center; display:none;">
+    <p style="color:var(--navy-soft); margin-top:0;">
+      כדי לראות את המילים שלכם צריך להתחבר עם גוגל קודם (בפינה העליונה של הדף).
+    </p>
+    <p style="color:var(--navy-soft); font-size:.85rem;">
+      שימו לב: מילים שנשלחו בעבר בלי התחברות (או לפני התכונה הזו) לא משויכות
+      לחשבון ולכן לא יופיעו כאן.
+    </p>
+  </div>
+
+  <div id="myWordsWrap" aria-live="polite" style="display:none;"></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/app.js"></script>
+<script>
+  renderChrome("my-words");
+
+  const signedOutBox = document.getElementById("signedOutBox");
+  const wrap = document.getElementById("myWordsWrap");
+
+  const NTFY_TOPIC = "oadict-admin-c02f2a0c657a";
+  function notifyAdmin(name, mean, username) {
+    fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
+      method: "POST",
+      headers: {
+        Title: "Word edited - pending re-approval - OADictionary",
+        Tags: "memo",
+        Click: "https://yakmos.github.io/oadictionary/admin.html",
+      },
+      body: `${name} - ${mean} נערכה ע"י ${username || "משתמש"} וממתינה לאישור מחדש`,
+    }).catch((err) => console.warn("notify failed (לא קריטי):", err));
+  }
+
+  function statusPill(w) {
+    return w.confirm === 1
+      ? `<span class="pill" style="color:var(--success)">מאושרת ומופיעה באתר</span>`
+      : `<span class="pill" style="color:var(--danger)">ממתינה לאישור מנהל</span>`;
+  }
+
+  function renderList(words) {
+    if (!words.length) {
+      wrap.innerHTML = '<p class="loading">עדיין לא הוספתם מילים כשהייתם מחוברים. <a href="add.html">הוסיפו מילה ראשונה</a></p>';
+      return;
+    }
+    wrap.innerHTML = words
+      .map(
+        (w) => `
+      <div class="pending-item" data-id="${w.id}">
+        <div style="margin-bottom:8px;">${statusPill(w)}</div>
+        <div class="view-mode">
+          <div class="w-name eng" lang="en">${escapeHtml(w.name)}</div>
+          <div class="w-mean">${escapeHtml(w.mean)}</div>
+          <div class="w-asco">${escapeHtml(w.asco)}</div>
+          <div class="admin-actions">
+            <button type="button" class="btn btn-outline btn-sm" data-action="edit">ערוך</button>
+            <button type="button" class="btn btn-delete btn-sm" data-action="delete">מחק</button>
+          </div>
+        </div>
+        <form class="edit-mode add-form" style="display:none; margin-top:10px;">
+          <div>
+            <label>המילה באנגלית</label>
+            <input class="eng" type="text" lang="en" data-field="name" value="${escapeHtml(w.name)}" required />
+          </div>
+          <div>
+            <label>התרגום לעברית</label>
+            <input type="text" data-field="mean" value="${escapeHtml(w.mean)}" required />
+          </div>
+          <div>
+            <label>האסוציאציה</label>
+            <textarea data-field="asco" required>${escapeHtml(w.asco)}</textarea>
+          </div>
+          <p class="field-hint">שמירה תשלח את המילה מחדש לאישור המנהל לפני שהעריכה תופיע באתר.</p>
+          <div class="admin-actions">
+            <button type="button" class="btn btn-primary btn-sm" data-action="save">שמירת שינויים</button>
+            <button type="button" class="btn btn-outline btn-sm" data-action="cancel">ביטול</button>
+          </div>
+          <div class="msg" data-role="editMsg" role="alert"></div>
+        </form>
+      </div>
+    `
+      )
+      .join("");
+
+    wrap.querySelectorAll(".pending-item").forEach((item) => {
+      const id = item.dataset.id;
+      const word = words.find((w) => w.id === id);
+      const viewMode = item.querySelector(".view-mode");
+      const editForm = item.querySelector(".edit-mode");
+
+      item.querySelector('[data-action="edit"]').addEventListener("click", () => {
+        viewMode.style.display = "none";
+        editForm.style.display = "flex";
+      });
+      item.querySelector('[data-action="cancel"]').addEventListener("click", () => {
+        editForm.style.display = "none";
+        viewMode.style.display = "block";
+      });
+      item.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+        if (!confirm(`למחוק את "${word.name}"? לא ניתן לשחזר.`)) return;
+        try {
+          await db.collection("words").doc(id).delete();
+          loadMyWords();
+        } catch (err) {
+          console.error(err);
+          alert("שגיאה במחיקת המילה.");
+        }
+      });
+      item.querySelector('[data-action="save"]').addEventListener("click", async () => {
+        const name = editForm.querySelector('[data-field="name"]').value.trim();
+        const mean = editForm.querySelector('[data-field="mean"]').value.trim();
+        const asco = editForm.querySelector('[data-field="asco"]').value.trim();
+        const editMsg = editForm.querySelector('[data-role="editMsg"]');
+        if (!name || !mean || !asco) return;
+        const saveBtn = editForm.querySelector('[data-action="save"]');
+        saveBtn.disabled = true;
+        try {
+          const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+          await db.collection("words").doc(id).update({
+            name: capitalized,
+            mean,
+            asco,
+            confirm: 0,
+          });
+          notifyAdmin(capitalized, mean, word.username);
+          editMsg.textContent = "נשמר! המילה תופיע שוב אחרי אישור מנהל.";
+          editMsg.className = "msg show ok";
+          setTimeout(loadMyWords, 900);
+        } catch (err) {
+          console.error(err);
+          editMsg.textContent = "שגיאה בשמירה - נסו שוב.";
+          editMsg.className = "msg show err";
+        } finally {
+          saveBtn.disabled = false;
+        }
+      });
+    });
+  }
+
+  async function loadMyWords() {
+    const user = firebase.auth().currentUser;
+    if (!user) return;
+    wrap.innerHTML = '<p class="loading">טוען...</p>';
+    try {
+      const snap = await db.collection("words").where("uid", "==", user.uid).get();
+      const words = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      words.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      renderList(words);
+    } catch (err) {
+      console.error(err);
+      wrap.innerHTML = '<p class="loading" role="alert">שגיאה בטעינת המילים שלכם.</p>';
+    }
+  }
+
+  if (typeof firebase !== "undefined" && firebase.auth) {
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        signedOutBox.style.display = "none";
+        wrap.style.display = "block";
+        loadMyWords();
+      } else {
+        signedOutBox.style.display = "block";
+        wrap.style.display = "none";
+      }
+    });
+  } else {
+    // גיבוי אם Firebase לא נטען (למשל חסימת רשת) - עדיף להראות הודעה ברורה
+    // מאשר עמוד ריק לגמרי.
+    signedOutBox.style.display = "block";
+    wrap.style.display = "none";
+  }
+</script>
+</body>
+</html>

@@ -15,13 +15,58 @@
   --accent-soft: #fff1ec;
   --gold: #b97708;
   --success: #1b7e54;
+  --success-soft: #e9f8f0;
   --danger: #bc1a21;
   --danger-soft: #fdeceb;
+  /* צבעי "מילוי" קבועים לכפתורים מלאים עם טקסט לבן - נשארים זהים בין מצב
+     בהיר לכהה (בניגוד לצבעי הטקסט למעלה, ששונים בין המצבים), כי כפתור
+     מלא תמיד צריך ניגודיות טובה מול טקסט לבן, בלי קשר לרקע הדף מסביב */
+  --accent-btn: #d62100;
+  --success-btn: #1b7e54;
+  --danger-btn: #bc1a21;
+  --placeholder: #6b7d92;
+  --btn-secondary-hover: #eef2f6;
+  --fixed-dark: #1c2b45;
   --radius: 14px;
   --radius-lg: 32px;
   --shadow: 0 20px 50px -18px rgba(28, 43, 69, .25);
   --shadow-sm: 0 6px 16px -6px rgba(28, 43, 69, .15);
   --max-w: 1000px;
+}
+
+/* מצב כהה - טוגל נפרד לגמרי מתפריט הנגישות, לטובת מי שפשוט מעדיף מסך כהה.
+   כל הצבעים כאן נבדקו במדויק (יחסי ניגודיות WCAG) כדי לא לפגוע בנגישות. */
+body.dark-mode {
+  --ink: #eef2f6;
+  --navy: #cdd8e3;
+  --navy-soft: #8fa0b3;
+  --bg: #10171f;
+  --bg-soft: #182029;
+  --card: #1c2530;
+  --card-border: #3a4753;
+  --input-border: #6d7f92;
+  --accent-a11y: #ff8360;
+  --accent-soft: #2a1f1c;
+  --gold: #e0a545;
+  --success: #3ddc97;
+  --success-soft: #16332a;
+  --danger: #ff6b6b;
+  --danger-soft: #3a2024;
+  --placeholder: #7c8ea3;
+  --btn-secondary-hover: #22303c;
+}
+
+/* שילוב מצב כהה + ניגודיות גבוהה יחד - הופך את הקצוות ל"לבן על שחור"
+   במקום "שחור על לבן", כדי שהשילוב עדיין יהיה קריא ולא הפוך */
+body.dark-mode.a11y-contrast {
+  --ink: #ffffff;
+  --navy: #ffffff;
+  --navy-soft: #e6e6e6;
+  --card-border: #ffffff;
+  --input-border: #ffffff;
+  --accent-a11y: #ffb199;
+  --danger: #ff8a8a;
+  --success: #5eeab3;
 }
 
 /* מצב ניגודיות גבוהה - מופעל דרך תפריט הנגישות (הכפתור הצף) */
@@ -45,7 +90,7 @@ body.a11y-contrast .search-pill,
 body.a11y-contrast .search-suggestions,
 body.a11y-contrast header.site-header,
 body.a11y-contrast footer.site-footer {
-  border: 2px solid #000 !important;
+  border: 2px solid var(--ink) !important;
   box-shadow: none !important;
 }
 
@@ -109,7 +154,7 @@ body.a11y-reduce-motion *::after {
   top: -60px;
   right: 12px;
   z-index: 200;
-  background: var(--ink);
+  background: var(--fixed-dark);
   color: #fff;
   padding: 12px 20px;
   border-radius: 8px;
@@ -148,8 +193,121 @@ header.site-header {
   z-index: 10;
 }
 
-.brand { display: flex; align-items: center; }
+/* ללוגו יש רקע לבן קבוע בתוך קובץ התמונה עצמו (JPG, בלי שקיפות) - עטיפה
+   בכרטיסון לבן עגול הופכת את זה למכוון גם במצב כהה, במקום מלבן לבן בולט */
+.brand {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 6px 14px;
+  border-radius: 10px;
+}
 .brand-logo { height: 34px; width: auto; display: block; }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-toggle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--card-border);
+  background: var(--bg-soft);
+  color: var(--navy);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  transition: background .15s, color .15s;
+}
+.theme-toggle:hover { background: var(--card-border); }
+
+.account-widget {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-google {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: var(--navy);
+  font-family: inherit;
+  font-size: .85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.btn-google:hover { background: var(--bg-soft); }
+
+.account-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.account-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: block;
+  object-fit: cover;
+}
+
+.account-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-btn);
+  color: #fff;
+  font-weight: 800;
+  font-size: .8rem;
+}
+
+.account-name {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-signout {
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--navy-soft);
+  font-family: inherit;
+  font-size: .8rem;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.account-signout:hover { background: var(--bg-soft); }
 
 nav.main-nav {
   display: flex;
@@ -274,11 +432,11 @@ footer.site-footer {
   text-align: right;
 }
 
-.search-pill input::placeholder { color: #6b7d92; }
+.search-pill input::placeholder { color: var(--placeholder); }
 
 .search-pill button {
   border: none;
-  background: var(--accent-a11y);
+  background: var(--accent-btn);
   color: white;
   font-weight: 700;
   font-size: 1rem;
@@ -382,7 +540,7 @@ footer.site-footer {
 .btn:active { transform: scale(.97); }
 
 .btn-primary {
-  background: var(--accent-a11y);
+  background: var(--accent-btn);
   color: white;
   box-shadow: 0 8px 20px -6px rgba(214, 33, 0, .45);
 }
@@ -395,7 +553,7 @@ footer.site-footer {
   border: 1px solid var(--card-border);
 }
 
-.btn-secondary:hover { background: #eef2f6; }
+.btn-secondary:hover { background: var(--btn-secondary-hover); }
 
 .btn-outline {
   background: transparent;
@@ -535,6 +693,44 @@ footer.site-footer {
   color: var(--navy-soft);
 }
 
+/* טבלת תורמים מובילים */
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 12px 18px;
+}
+
+.leaderboard-row.top3 {
+  border-color: var(--accent-a11y);
+  background: var(--accent-soft);
+}
+
+.leaderboard-rank {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--navy-soft);
+  min-width: 32px;
+  text-align: center;
+}
+
+.leaderboard-row.top3 .leaderboard-rank { font-size: 1.4rem; }
+
+.leaderboard-name {
+  flex: 1;
+  font-weight: 700;
+  color: var(--ink);
+}
+
 /* Add word form */
 form.add-form {
   display: flex;
@@ -560,9 +756,17 @@ form.add-form textarea {
 
 form.add-form textarea { min-height: 90px; resize: vertical; }
 
+form.add-form input[readonly] {
+  background: var(--card-border);
+  color: var(--navy-soft);
+  cursor: not-allowed;
+}
+
+.field-hint { font-size: .8rem; color: var(--navy-soft); margin: 6px 0 0; }
+
 .msg { padding: 12px 16px; border-radius: 10px; margin-top: 10px; display: none; }
 .msg.show { display: block; }
-.msg.ok { background: #e9f8f0; color: var(--success); }
+.msg.ok { background: var(--success-soft); color: var(--success); }
 .msg.err { background: var(--danger-soft); color: var(--danger); }
 
 .loading { text-align: center; color: var(--navy-soft); padding: 30px; }
@@ -602,9 +806,9 @@ form.add-form textarea { min-height: 90px; resize: vertical; }
 
 .admin-actions { display: flex; gap: 10px; }
 
-.btn-approve { background: var(--success); color: white; }
+.btn-approve { background: var(--success-btn); color: white; }
 .btn-approve:hover { background: #156b47; }
-.btn-delete { background: var(--danger); color: white; }
+.btn-delete { background: var(--danger-btn); color: white; }
 .btn-delete:hover { background: #9c1519; }
 .btn-sm { padding: 9px 20px; font-size: .9rem; }
 
@@ -628,6 +832,11 @@ form.add-form textarea { min-height: 90px; resize: vertical; }
     position: static;
   }
   .brand-logo { height: 26px; }
+  .header-right {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
   nav.main-nav {
     width: 100%;
     justify-content: center;
@@ -635,6 +844,8 @@ form.add-form textarea { min-height: 90px; resize: vertical; }
     row-gap: 6px;
   }
   nav.main-nav a { padding: 7px 12px; font-size: .8rem; }
+  .account-name { max-width: 90px; }
+  .btn-google { padding: 7px 12px; font-size: .78rem; }
 
   main { padding: 20px 14px 44px; }
 
@@ -685,7 +896,7 @@ form.add-form textarea { min-height: 90px; resize: vertical; }
   height: 52px;
   border-radius: 50%;
   border: none;
-  background: var(--ink);
+  background: var(--fixed-dark);
   color: #fff;
   font-size: 1.5rem;
   line-height: 1;

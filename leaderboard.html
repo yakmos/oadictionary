@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>תורמים מובילים - OADictionary</title>
+<link rel="icon" href="img/favicon.ico" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<main id="main-content" tabindex="-1">
+  <h1 style="margin-top:0">תורמים מובילים</h1>
+  <p style="color:var(--navy-soft)">
+    דירוג לפי כמות המילים המאושרות שכל אחד תרם למאגר - כולל כל מי שהוסיף
+    אסוציאציה, גם בלי חשבון.
+  </p>
+
+  <div id="leaderboardWrap" aria-live="polite"><p class="loading">טוען...</p></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/app.js"></script>
+<script>
+  renderChrome("leaderboard");
+
+  const wrap = document.getElementById("leaderboardWrap");
+  const MEDALS = ["🥇", "🥈", "🥉"];
+
+  function render(rows) {
+    if (!rows.length) {
+      wrap.innerHTML = '<p class="loading">עדיין אין תורמים מאושרים להצגה.</p>';
+      return;
+    }
+    wrap.innerHTML = `
+      <div class="leaderboard-list">
+        ${rows
+          .map(
+            (row, i) => `
+          <div class="leaderboard-row${i < 3 ? " top3" : ""}">
+            <span class="leaderboard-rank">${MEDALS[i] || i + 1}</span>
+            <span class="leaderboard-name">${escapeHtml(row.username)}</span>
+            <span class="pill">${row.count} מילים</span>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
+  async function loadLeaderboard() {
+    try {
+      // סופרים רק מילים מאושרות (confirm==1) - אלה שבאמת מופיעות באתר.
+      const snap = await db.collection("words").where("confirm", "==", 1).get();
+      const counts = {};
+      snap.forEach((doc) => {
+        const u = (doc.data().username || "").trim();
+        if (!u) return;
+        counts[u] = (counts[u] || 0) + 1;
+      });
+      const rows = Object.entries(counts)
+        .map(([username, count]) => ({ username, count }))
+        .sort((a, b) => b.count - a.count || a.username.localeCompare(b.username, "he"));
+      render(rows.slice(0, 100));
+    } catch (err) {
+      console.error(err);
+      wrap.innerHTML = '<p class="loading" role="alert">שגיאה בטעינת הדירוג.</p>';
+    }
+  }
+
+  loadLeaderboard();
+</script>
+</body>
+</html>
