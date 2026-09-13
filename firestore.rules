@@ -16,6 +16,11 @@ rules_version = '2';
 //
 // לפני production אמיתי כדאי לשקול הגבלת קצב (App Check / Cloud Functions),
 // אבל לפרויקט אישי כזה הכללים האלה סבירים כברירת מחדל.
+//
+// - settings/{settingId}: הגדרות כלליות (כרגע: מחיר קובץ ה-PDF) - קריאה
+//   פתוחה, כתיבה רק למנהל.
+// - leads/{leadId}: פניות התעניינות מדף הנחיתה של קובץ ה-PDF - יצירה פתוחה
+//   (עם ולידציה), קריאה/עדכון/מחיקה רק למנהל.
 
 function isAdmin() {
   return request.auth != null && request.auth.token.email == 'yakir.mos@gmail.com';
@@ -55,6 +60,27 @@ service cloud.firestore {
                         && request.resource.data.asco is string  && request.resource.data.asco.size() < 2000);
 
       allow delete: if isAdmin() || isOwner(resource.data);
+    }
+
+    // settings/{settingId} - הגדרות כלליות של האתר (למשל מחיר קובץ ה-PDF).
+    // קריאה פתוחה לכולם (דף הנחיתה צריך להציג את המחיר לכל מבקר), אבל
+    // כתיבה/עדכון מותרים רק למנהל המחובר - דרך פאנל הניהול.
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // leads/{leadId} - פניות "מעוניין/ת לקנות" מדף הנחיתה של קובץ ה-PDF.
+    // יצירה פתוחה לכולם (גם ללא התחברות), אבל רק עם השדות הנכונים ובגדלים
+    // סבירים - כדי למנוע ספאם/הצפה. קריאה/עדכון/מחיקה רק למנהל המחובר,
+    // כדי ששום גולש לא יוכל לראות פרטי קשר של גולשים אחרים.
+    match /leads/{leadId} {
+      allow create: if request.resource.data.keys().hasAll(['name','contact','createdAt'])
+                    && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 100
+                    && request.resource.data.contact is string && request.resource.data.contact.size() > 0 && request.resource.data.contact.size() < 150
+                    && request.resource.data.createdAt is timestamp;
+
+      allow read, update, delete: if isAdmin();
     }
   }
 }

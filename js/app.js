@@ -24,6 +24,7 @@ function renderChrome(activePage) {
         <a href="add.html" data-page="add">שיתוף אסוציאציה</a>
         <a href="leaderboard.html" data-page="leaderboard">תורמים מובילים</a>
         <a href="my-words.html" data-page="my-words">המילים שלי</a>
+        <a href="premium.html" data-page="premium">קובץ PDF מלא</a>
       </nav>
       <div class="header-actions" id="headerActions"></div>
     </div>

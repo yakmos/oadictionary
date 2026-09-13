@@ -41,6 +41,24 @@
     <p id="emptyMsg" style="display:none;color:var(--navy-soft);text-align:center;padding:30px">
       אין מילים ממתינות לאישור כרגע 🎉
     </p>
+
+    <h2 style="margin-top:40px">קובץ ה-PDF - מחיר ולידים</h2>
+
+    <div class="card" style="max-width:360px;margin-bottom:24px">
+      <label for="priceInput" style="color:var(--navy-soft);font-size:.9rem">מחיר הקובץ (₪)</label>
+      <input id="priceInput" type="number" step="0.10" min="0" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--card-border);border-radius:10px;background:var(--bg);color:var(--ink);font-size:1rem;margin:6px 0 12px" />
+      <button type="button" class="btn btn-primary btn-sm" id="savePriceBtn">שמירת מחיר</button>
+      <div class="msg" id="priceMsg" role="alert"></div>
+      <p style="color:var(--navy-soft);font-size:.8rem;margin-top:10px">
+        המחיר הזה מוצג אוטומטית בדף <a href="premium.html">premium.html</a> - שינוי כאן משנה אותו מיד לכל המבקרים.
+      </p>
+    </div>
+
+    <div id="leadsCount" style="color:var(--navy-soft);margin-bottom:10px" aria-live="polite"></div>
+    <div id="leadsList" aria-live="polite"></div>
+    <p id="leadsEmptyMsg" style="display:none;color:var(--navy-soft);text-align:center;padding:30px">
+      עדיין אין פניות מעוניינים בקובץ ה-PDF.
+    </p>
   </div>
 </main>
 
@@ -58,6 +76,12 @@
   const pendingList = document.getElementById("pendingList");
   const pendingCount = document.getElementById("pendingCount");
   const emptyMsg = document.getElementById("emptyMsg");
+  const priceInput = document.getElementById("priceInput");
+  const savePriceBtn = document.getElementById("savePriceBtn");
+  const priceMsg = document.getElementById("priceMsg");
+  const leadsCount = document.getElementById("leadsCount");
+  const leadsList = document.getElementById("leadsList");
+  const leadsEmptyMsg = document.getElementById("leadsEmptyMsg");
 
   loginBox.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -93,6 +117,8 @@
       loginBox.style.display = "none";
       panel.style.display = "block";
       loadPending();
+      loadPriceSetting();
+      loadLeads();
     } else {
       loginBox.style.display = "flex";
       panel.style.display = "none";
@@ -157,6 +183,83 @@
     const left = pendingList.querySelectorAll(".pending-item").length;
     pendingCount.textContent = `${left} מילים ממתינות לאישור`;
     emptyMsg.style.display = left === 0 ? "block" : "none";
+  }
+
+  async function loadPriceSetting() {
+    try {
+      const doc = await db.collection("settings").doc("premium_pdf").get();
+      const price = doc.exists && typeof doc.data().price === "number" ? doc.data().price : 89.9;
+      priceInput.value = price;
+    } catch (err) {
+      console.error(err);
+      priceMsg.textContent = "שגיאה בטעינת המחיר הנוכחי.";
+      priceMsg.className = "msg show err";
+    }
+  }
+
+  savePriceBtn.addEventListener("click", async () => {
+    const val = parseFloat(priceInput.value);
+    if (isNaN(val) || val < 0) {
+      priceMsg.textContent = "יש להזין מחיר תקין.";
+      priceMsg.className = "msg show err";
+      return;
+    }
+    savePriceBtn.disabled = true;
+    priceMsg.className = "msg";
+    try {
+      await db.collection("settings").doc("premium_pdf").set({ price: val }, { merge: true });
+      priceMsg.textContent = "המחיר נשמר בהצלחה ✔";
+      priceMsg.className = "msg show ok";
+    } catch (err) {
+      console.error(err);
+      priceMsg.textContent = "שגיאה בשמירת המחיר.";
+      priceMsg.className = "msg show err";
+    } finally {
+      savePriceBtn.disabled = false;
+    }
+  });
+
+  async function loadLeads() {
+    leadsList.innerHTML = '<p class="loading">טוען...</p>';
+    try {
+      const snap = await db.collection("leads").orderBy("createdAt", "desc").get();
+      leadsList.innerHTML = "";
+      leadsCount.textContent = `${snap.size} פניות מעוניינים`;
+      leadsEmptyMsg.style.display = snap.empty ? "block" : "none";
+      snap.forEach((doc) => {
+        const d = doc.data();
+        const when = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleString("he-IL") : "";
+        const item = document.createElement("div");
+        item.className = "pending-item";
+        item.innerHTML = `
+          <div class="w-name">${escapeHtml(d.name || "")}</div>
+          <div class="w-mean">${escapeHtml(d.contact || "")}</div>
+          <div class="w-user">${escapeHtml(when)}</div>
+          <div class="admin-actions">
+            <button type="button" class="btn btn-delete btn-sm" data-action="delete" aria-label="מחק פנייה של ${escapeHtml(d.name || "")}">מחק</button>
+          </div>
+        `;
+        item.querySelector('[data-action="delete"]').addEventListener("click", async (e) => {
+          if (!confirm(`למחוק את הפנייה של "${d.name}"?`)) return;
+          e.target.disabled = true;
+          try {
+            await db.collection("leads").doc(doc.id).delete();
+            item.remove();
+            const left = leadsList.querySelectorAll(".pending-item").length;
+            leadsCount.textContent = `${left} פניות מעוניינים`;
+            leadsEmptyMsg.style.display = left === 0 ? "block" : "none";
+          } catch (err) {
+            console.error(err);
+            e.target.disabled = false;
+            alert("שגיאה במחיקת הפנייה");
+          }
+        });
+        leadsList.appendChild(item);
+      });
+    } catch (err) {
+      console.error(err);
+      leadsList.innerHTML = '<p class="loading" role="alert">שגיאה בטעינת הפניות.</p>';
+    }
   }
 </script>
 </body>
