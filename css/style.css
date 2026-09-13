@@ -350,6 +350,10 @@ footer.site-footer {
   border-top: 1px solid var(--card-border);
   background: var(--bg-soft);
 }
+footer.site-footer .footer-links { margin-bottom: 6px; }
+footer.site-footer .footer-links a,
+footer.site-footer .footer-credit a { color: var(--navy-soft); text-decoration: underline; }
+footer.site-footer .footer-credit { opacity: .85; }
 
 /* ===== Hero / big rounded search ===== */
 .hero-wrap {

@@ -52,8 +52,14 @@ function renderChrome(activePage) {
   const footer = document.createElement("footer");
   footer.className = "site-footer";
   footer.innerHTML = `
-    בהשראת OADICTIONARY.com &middot; נבנה מחדש עם Firebase &middot; ${new Date().getFullYear()}
-    &middot; <a href="accessibility.html">הצהרת נגישות</a>
+    <div class="footer-links">
+      <a href="psychometric.html">אוצר מילים לפסיכומטרי</a>
+      &middot; <a href="word-of-the-week.html">מילה בשבוע</a>
+      &middot; <a href="accessibility.html">הצהרת נגישות</a>
+    </div>
+    <div class="footer-credit">
+      בהשראת OADICTIONARY.com &middot; נבנה מחדש עם Firebase &middot; ${new Date().getFullYear()}
+    </div>
   `;
   document.body.appendChild(footer);
 
