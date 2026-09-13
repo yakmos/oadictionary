@@ -54,6 +54,7 @@
 </main>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="js/firebase-config.js"></script>
@@ -124,6 +125,7 @@
       byEl.textContent = d.username ? `אסוציאציה מאת: ${d.username}` : "";
       seenCount++;
       scoreLine.textContent = `מילה מספר ${seenCount} בסבב הזה`;
+      trackEvent("practice_word", { index_in_session: seenCount });
     } catch (e) {
       console.error(e);
       wordEl.textContent = "שגיאה בטעינה - ודאו שהגדרתם את Firebase (README)";
@@ -148,6 +150,7 @@
     ratedThisRound = true;
     document.querySelectorAll("#stars .star").forEach((s) => { s.disabled = true; });
     ratingStatus.textContent = `דירגתם ${starWord(val)}, תודה!`;
+    trackEvent("rate_word", { stars: val });
     try {
       await db.runTransaction(async (tx) => {
         const ref = db.collection("words").doc(currentDoc.id);

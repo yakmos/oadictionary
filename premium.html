@@ -224,6 +224,7 @@
 </main>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="js/firebase-config.js"></script>
@@ -233,6 +234,7 @@
 
   const DEFAULT_PRICE = 89.90;
   const priceValueEl = document.getElementById("priceValue");
+  let currentPrice = DEFAULT_PRICE;
 
   // מחיר נטען דינמית מ-Firestore (settings/premium_pdf) כדי שיהיה אפשר
   // לעדכן אותו מפאנל הניהול בכל רגע, בלי לגעת בקוד. אם המסמך עדיין לא
@@ -240,8 +242,8 @@
   async function loadPrice() {
     try {
       const doc = await db.collection("settings").doc("premium_pdf").get();
-      const price = doc.exists && typeof doc.data().price === "number" ? doc.data().price : DEFAULT_PRICE;
-      priceValueEl.textContent = `₪${price.toFixed(2).replace(/\.00$/, "")}`;
+      currentPrice = doc.exists && typeof doc.data().price === "number" ? doc.data().price : DEFAULT_PRICE;
+      priceValueEl.textContent = `₪${currentPrice.toFixed(2).replace(/\.00$/, "")}`;
     } catch (err) {
       console.error(err);
       priceValueEl.textContent = `₪${DEFAULT_PRICE}`;
@@ -254,6 +256,7 @@
     section.hidden = false;
     section.scrollIntoView({ behavior: "smooth", block: "start" });
     document.getElementById("leadName").focus();
+    trackEvent("view_item", { item_name: "premium_pdf" });
   });
 
   // אותו מנגנון התראה בזמן אמת שכבר קיים ב-add.html (ntfy.sh) - כדי שיקיר
@@ -292,6 +295,7 @@
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
       notifyLead(name, contact);
+      trackEvent("generate_lead", { item_name: "premium_pdf", value: currentPrice, currency: "ILS" });
       leadMsg.textContent = "תודה! קיבלתי את הפרטים ואחזור אליכם ממש בקרוב 🙌";
       leadMsg.className = "msg show ok";
       leadForm.reset();

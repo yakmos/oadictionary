@@ -20,3 +20,24 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+
+// Analytics (Google Analytics 4 מוטמע ב-Firebase) - לא נטען בעמוד הניהול (admin.html),
+// כדי שהביקורים שלנו כמנהלים לא יעוותו את הנתונים על משתמשים אמיתיים. חוסם-פרסומות
+// או דפדפן עם הגנת פרטיות עלולים לחסום את זה - זה לא אמור לשבור שום דבר אחר באתר.
+let analytics = null;
+try {
+  if (typeof firebase.analytics === "function") {
+    analytics = firebase.analytics();
+  }
+} catch (err) {
+  console.warn("Analytics לא הופעל (לא קריטי):", err);
+}
+
+// עוזר קטן לרישום אירועים בבטחה - לא מפיל שום דבר אם analytics לא זמין.
+function trackEvent(name, params) {
+  try {
+    if (analytics) analytics.logEvent(name, params || {});
+  } catch (err) {
+    console.warn("trackEvent נכשל (לא קריטי):", err);
+  }
+}
